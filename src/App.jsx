@@ -1,180 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Coins, TreePine, Mountain, Wheat, Warehouse, Home, Shield, Hammer,
-  Landmark, Users, Pickaxe, Store, Tent, Sparkles, Sprout, Anchor,
-  Swords, Skull, Egg, ZoomIn, ZoomOut, RotateCcw, X, Menu, Settings, ScrollText,
+  Users, Landmark, Hammer, ScrollText, Swords, Skull, Egg,
+  ZoomIn, ZoomOut, RotateCcw, X, Menu, Settings, Flag, Lock,
 } from "lucide-react";
-
-// ---------------------------------------------------------------------------
-// Config
-// ---------------------------------------------------------------------------
-
-const COLS = 30;
-const ROWS = 22;
-const TILE = 24;
-const TOWNHALL_ROW = 11;
-const TOWNHALL_COL = 15;
-const idx = (r, c) => r * COLS + c;
-const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
-
-const REGIONS = {
-  europa: { name: "Europa", palette: { grass: "#7CAD5C", wald: ["#3F6B3A", "#4B7A44"], fels: ["#8C8375", "#9A9186"], wasser: ["#3E82B8", "#4C93C9"], gold: "#D8A94E", mine: ["#6B6459", "#7A7266"] } },
-  aegypten: { name: "Ägypten", palette: { grass: "#D8C384", wald: ["#8C7A3F", "#9C8A4A"], fels: ["#B59A6A", "#C4A876"], wasser: ["#4C93C9", "#5AA3D6"], gold: "#E8C468", mine: ["#8A7A55", "#977F63"] } },
-  peking: { name: "Ostasien", palette: { grass: "#8FB86B", wald: ["#3A6B3A", "#488048"], fels: ["#8C8375", "#9A9186"], wasser: ["#3E82B8", "#4C93C9"], gold: "#D8A94E", mine: ["#6B6459", "#7A7266"] } },
-  groenland: { name: "Grönland", palette: { grass: "#D7E6E2", wald: ["#5C8A80", "#6C9A90"], fels: ["#A9B8B6", "#B8C6C4"], wasser: ["#6BAAD6", "#7ABAE6"], gold: "#E8D9A0", mine: ["#9AAAA6", "#A8B6B2"] } },
-  sibirien: { name: "Sibirien", palette: { grass: "#CFE0D8", wald: ["#3F5C4A", "#4B6C56"], fels: ["#8C9A96", "#9AA8A4"], wasser: ["#5C93B8", "#6AA3C8"], gold: "#D8C888", mine: ["#7A8A84", "#889892"] } },
-};
-
-const BUILDING_TYPES = {
-  holzfaeller: { name: "Holzfäller-Hütte", icon: TreePine, color: "#5C7A45", cost: { gold: 50 }, produces: { holz: 3 } },
-  steinbruch: { name: "Steinbruch", icon: Mountain, color: "#8C8375", cost: { gold: 60, holz: 20 }, produces: { stein: 3 } },
-  bauernhof: { name: "Bauernhof", icon: Wheat, color: "#C99A3E", cost: { gold: 40, holz: 10 }, produces: { nahrung: 4 } },
-  markt: { name: "Markt", icon: Store, color: "#B5843C", cost: { gold: 70, holz: 20 }, produces: {} },
-  lager: { name: "Lager", icon: Warehouse, color: "#6B5B45", cost: { gold: 80, stein: 30 }, produces: {}, capBonus: 100 },
-  haus: { name: "Haus", icon: Home, color: "#A9642F", cost: { gold: 30, holz: 15 }, produces: {}, popBonus: 2 },
-  kaserne: { name: "Kaserne", icon: Tent, color: "#6E5230", cost: { gold: 90, holz: 40 }, produces: {}, troopBonus: 1 },
-  mauer: { name: "Mauer", icon: Shield, color: "#6E6E68", cost: { stein: 20 }, produces: {} },
-  schmiede: { name: "Schmiede", icon: Hammer, color: "#4A4A48", cost: { gold: 100, stein: 50, holz: 30 }, produces: {}, unlocksCraft: true },
-  bruecke: { name: "Brücke", icon: Anchor, color: "#8B6B4A", cost: { holz: 40, stein: 20 }, produces: {}, buildOnWater: true },
-};
-
-const TOOLS = { tool_pflanzen: { name: "Baum pflanzen", icon: Sprout, color: "#4B7A44", cost: { holz: 5 } } };
-
-const RESOURCE_META = {
-  gold: { label: "Gold", icon: Coins, color: "#D8A94E" },
-  holz: { label: "Holz", icon: TreePine, color: "#7A9256" },
-  stein: { label: "Stein", icon: Mountain, color: "#8C8375" },
-  nahrung: { label: "Nahrung", icon: Wheat, color: "#C77B3E" },
-  erz: { label: "Erz", icon: Pickaxe, color: "#9AA0A6" },
-};
-
-const JOB_META = {
-  holzfaeller: { label: "Holzfäller", color: RESOURCE_META.holz.color },
-  steinbruch: { label: "Steinmetz", color: RESOURCE_META.stein.color },
-  bauernhof: { label: "Bauer", color: RESOURCE_META.nahrung.color },
-  markt: { label: "Händler", color: RESOURCE_META.gold.color },
-};
-
-const GLOBAL_STYLES = `
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');
-
-@keyframes marketPulse {
-  0% { box-shadow: 0 0 0 0 rgba(216,169,78,0.55); }
-  100% { box-shadow: 0 0 16px 8px rgba(216,169,78,0); }
-}
-.market-pulse { position: absolute; inset: 0; border-radius: 4px; animation: marketPulse 0.7s ease-out; pointer-events: none; }
-
-@keyframes waterShimmer {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.08); }
-}
-.tile-water { animation: waterShimmer 3.5s ease-in-out infinite; }
-
-@keyframes dotBob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-1.5px); }
-}
-.dot-bob { animation: dotBob 1.6s ease-in-out infinite; }
-
-.kw-btn { transition: transform 0.12s ease, filter 0.12s ease; }
-.kw-btn:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
-.kw-btn:active:not(:disabled) { transform: translateY(0); filter: brightness(0.95); }
-
-.kw-tile { transition: filter 0.12s ease; }
-.kw-tile:hover { filter: brightness(1.18); }
-
-.kw-building { box-shadow: inset 0 -3px 0 rgba(0,0,0,0.18), inset 0 2px 0 rgba(255,255,255,0.14); }
-
-.kw-townhall { position: relative; }
-.kw-townhall::after { content: ""; position: absolute; top: -4px; left: 50%; transform: translateX(-50%); width: 3px; height: 9px; background: #C24A4A; border-radius: 1px 1px 0 0; }
-`;
-
-const NODE_DEFS = {
-  holz: { name: "Waldlager", icon: TreePine, cost: { nahrung: 5 }, time: 8, reward: { holz: 40 } },
-  fels: { name: "Felsenlager", icon: Mountain, cost: { nahrung: 8 }, time: 12, reward: { stein: 35 } },
-  gold: { name: "Goldhaufen", icon: Sparkles, cost: { nahrung: 10 }, time: 15, reward: { gold: 70 } },
-  erz: { name: "Tiefe Mine", icon: Pickaxe, cost: { nahrung: 20 }, time: 30, reward: { erz: 60 } },
-};
-
-const CRAFTS = [
-  { id: "werkzeug", name: "Werkzeug", cost: { holz: 20, erz: 15 }, time: 8 },
-  { id: "schwert", name: "Schwert", cost: { erz: 25, gold: 20 }, time: 12 },
-  { id: "ruestung", name: "Rüstung", cost: { erz: 35, stein: 20 }, time: 15 },
-];
-
-const TUTORIAL_STEPS = [
-  "Willkommen in deinem neuen Reich! Das braune Feld in der Mitte ist dein Rathaus.",
-  "Wähle unten ein Gebäude aus und tippe auf ein freies Feld deiner Landfarbe, um es zu bauen.",
-  "Tippe direkt auf einen Baum, um Holz zu bekommen – oder auf Wald/Fels/Gold-Symbole, um einen Trupp loszuschicken.",
-  "Im Fluss kannst du nach Gold suchen, und mit einer Brücke drüber bauen. Achtung: Feinde greifen gelegentlich an – Mauern schützen dich! Mit Escape kommst du jederzeit ins Menü.",
-];
-
-const START_RESOURCES = { gold: 150, holz: 60, stein: 40, nahrung: 40, erz: 0 };
-const BASE_CAP = 300;
-
-function generateMap() {
-  const terrain = new Array(COLS * ROWS).fill("grass");
-  const nodes = {};
-
-  const forestWidth = 2 + Math.floor(Math.random() * 3);
-  const rockWidth = 2 + Math.floor(Math.random() * 3);
-  for (let r = 0; r < ROWS; r++) for (let c = 0; c < forestWidth; c++) if (Math.random() < 0.72) terrain[idx(r, c)] = "wald";
-  for (let r = 0; r < ROWS; r++) for (let c = COLS - rockWidth; c < COLS; c++) if (Math.random() < 0.72) terrain[idx(r, c)] = "fels";
-
-  const safeMin = forestWidth + 2;
-  const safeMax = COLS - rockWidth - 5;
-  const goldR = 1 + Math.floor(Math.random() * (ROWS - 6));
-  const goldC = safeMin + Math.floor(Math.random() * Math.max(1, safeMax - safeMin));
-  for (let r = goldR; r < goldR + 3 && r < ROWS; r++) for (let c = goldC; c < goldC + 3 && c < COLS; c++) terrain[idx(r, c)] = "gold";
-
-  let mineR, mineC, tries = 0;
-  do {
-    mineR = 1 + Math.floor(Math.random() * (ROWS - 6));
-    mineC = safeMin + Math.floor(Math.random() * Math.max(1, safeMax - safeMin));
-    tries++;
-  } while (Math.abs(mineR - goldR) < 4 && Math.abs(mineC - goldC) < 4 && tries < 20);
-  for (let r = mineR; r < mineR + 3 && r < ROWS; r++) for (let c = mineC; c < mineC + 3 && c < COLS; c++) terrain[idx(r, c)] = "mine";
-
-  const amp = 1.5 + Math.random() * 2.5;
-  const phase = Math.random() * Math.PI * 2;
-  const baseOffset = Math.floor(Math.random() * 7) - 3;
-  for (let r = 0; r < ROWS; r++) {
-    let center = Math.round(COLS / 2 + baseOffset + Math.sin(r / 2.2 + phase) * amp);
-    center = clamp(center, forestWidth + 1, COLS - rockWidth - 3);
-    terrain[idx(r, center)] = "wasser";
-    terrain[idx(r, Math.min(center + 1, COLS - 1))] = "wasser";
-  }
-
-  terrain[idx(TOWNHALL_ROW, TOWNHALL_COL)] = "grass";
-  [[0, 0], [0, 1], [0, -1], [1, 0], [-1, 0]].forEach(([dr, dc]) => {
-    const rr = TOWNHALL_ROW + dr, cc = TOWNHALL_COL + dc;
-    if (rr >= 0 && rr < ROWS && cc >= 0 && cc < COLS) terrain[idx(rr, cc)] = "grass";
-  });
-
-  const poolOf = (type) => { const arr = []; terrain.forEach((t, i) => { if (t === type) arr.push(i); }); return arr; };
-  const woodPool = poolOf("wald"); if (woodPool.length) nodes[pickRandom(woodPool)] = "holz";
-  const rockPool = poolOf("fels"); if (rockPool.length) nodes[pickRandom(rockPool)] = "fels";
-  const goldPool = poolOf("gold"); if (goldPool.length) nodes[pickRandom(goldPool)] = "gold";
-  const minePool = poolOf("mine"); if (minePool.length) nodes[pickRandom(minePool)] = "erz";
-
-  return { terrain, nodes };
-}
-
-function getTileBg(region, type) {
-  const p = REGIONS[region].palette;
-  if (type === "grass") return p.grass;
-  if (type === "gold") return p.gold;
-  if (type === "wald") return `repeating-linear-gradient(135deg, ${p.wald[0]}, ${p.wald[0]} 5px, ${p.wald[1]} 5px, ${p.wald[1]} 10px)`;
-  if (type === "fels") return `repeating-linear-gradient(135deg, ${p.fels[0]}, ${p.fels[0]} 5px, ${p.fels[1]} 5px, ${p.fels[1]} 10px)`;
-  if (type === "wasser") return `repeating-linear-gradient(120deg, ${p.wasser[0]}, ${p.wasser[0]} 6px, ${p.wasser[1]} 6px, ${p.wasser[1]} 12px)`;
-  if (type === "mine") return `repeating-linear-gradient(135deg, ${p.mine[0]}, ${p.mine[0]} 5px, ${p.mine[1]} 5px, ${p.mine[1]} 10px)`;
-  return p.grass;
-}
-
-function canAfford(resources, cost) { return Object.entries(cost).every(([k, v]) => (resources[k] || 0) >= v); }
-function pay(resources, cost) { const n = { ...resources }; Object.entries(cost).forEach(([k, v]) => (n[k] -= v)); return n; }
-function clampCap(resources, cap) { const n = { ...resources }; Object.keys(n).forEach((k) => (n[k] = Math.max(0, Math.min(n[k], cap)))); return n; }
+import {
+  COLS, ROWS, TILE, TOWNHALL_ROW, TOWNHALL_COL, ZONE_COLS, ZONE_ROWS,
+  idx, clamp, zoneIndexOfTile,
+  REGIONS, BUILDING_TYPES, TOOLS, RESOURCE_META, JOB_META, NODE_DEFS, CRAFTS,
+  TUTORIAL_STEPS, START_RESOURCES, BASE_CAP, GLOBAL_STYLES, SAVE_KEY, FIRST_RAID_DELAY,
+  ZONE_META, ZONE_UNLOCK_COST,
+  generateMap, getTileBg, canAfford, pay, clampCap,
+} from "./gameData";
 
 // ---------------------------------------------------------------------------
 // UI pieces
@@ -206,11 +42,19 @@ function ProgressBar({ pct, color }) {
   );
 }
 
-function SpawnScreen({ onPick }) {
+function SpawnScreen({ onPick, savedGame, onContinue }) {
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(160deg, #BFE3D6 0%, #8FBFA8 45%, #4C8C6B 100%)", padding: "24px", fontFamily: "Inter, sans-serif", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <style>{GLOBAL_STYLES}</style>
       <div style={{ maxWidth: "420px", width: "100%", background: "#F3F7EE", borderRadius: "16px", padding: "26px 22px", textAlign: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.2)" }}>
+        {savedGame && (
+          <>
+            <button className="kw-btn" onClick={onContinue} style={{ width: "100%", padding: "14px 8px", borderRadius: "10px", border: "none", background: "#254433", color: "#F3F7EE", fontWeight: 700, fontSize: "14px", cursor: "pointer", marginBottom: "10px" }}>
+              Fortsetzen
+            </button>
+            <div style={{ fontSize: "11.5px", color: "#5C6B5A", marginBottom: "18px" }}>Ein gespeichertes Reich wurde gefunden. Oder starte neu:</div>
+          </>
+        )}
         <div style={{ fontFamily: "Cinzel, serif", fontSize: "22px", fontWeight: 700, color: "#1F3B2C", marginBottom: "8px" }}>Wähle deinen Startort</div>
         <div style={{ fontSize: "12.5px", color: "#5C6B5A", marginBottom: "18px" }}>Vereinfachte Vorschau: die Region ändert aktuell nur das Farbthema deiner Karte.</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
@@ -225,23 +69,46 @@ function SpawnScreen({ onPick }) {
   );
 }
 
+function initialZonesUnlocked() {
+  const z = {};
+  ZONE_META.forEach((zone) => { z[zone.id] = zone.tier === 0; });
+  return z;
+}
+
+function readSavedGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
 export default function KingdomWorld() {
+  const [savedGame] = useState(readSavedGame);
   const [region, setRegion] = useState(null);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [mapData, setMapData] = useState(generateMap);
-  const { terrain, nodes } = mapData;
+  const { terrain, nodes, npcVillages } = mapData;
   const [buildings, setBuildings] = useState({ [idx(TOWNHALL_ROW, TOWNHALL_COL)]: "rathaus" });
   const [resources, setResources] = useState(START_RESOURCES);
+  const [zonesUnlocked, setZonesUnlocked] = useState(initialZonesUnlocked);
+  const [troopPool, setTroopPool] = useState(0);
+  const [garrisons, setGarrisons] = useState({});
+  const [zoneAttackPanel, setZoneAttackPanel] = useState(null);
+  const [zoneAssaults, setZoneAssaults] = useState([]);
   const [selectedType, setSelectedType] = useState(null);
   const [expeditions, setExpeditions] = useState([]);
   const [tab, setTab] = useState("basis");
   const [crafts, setCrafts] = useState([]);
   const [inventory, setInventory] = useState({ werkzeug: 0, schwert: 0, ruestung: 0 });
   const [villagersOn, setVillagersOn] = useState(true);
+  const [effects3D, setEffects3D] = useState(true);
+  const [reduceMotion, setReduceMotion] = useState(false);
   const [villagerDots, setVillagerDots] = useState([]);
   const [guardDots, setGuardDots] = useState([]);
   const [chickenDots, setChickenDots] = useState([]);
@@ -251,10 +118,11 @@ export default function KingdomWorld() {
   const [message, setMessage] = useState(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 56 });
-  const [raidTimer, setRaidTimer] = useState(55);
+  const [raidTimer, setRaidTimer] = useState(FIRST_RAID_DELAY);
   const [gameOver, setGameOver] = useState(false);
   const [showPauseMenu, setShowPauseMenu] = useState(false);
   const [showDevPanel, setShowDevPanel] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [raidsPaused, setRaidsPaused] = useState(false);
   const [raidMin, setRaidMin] = useState(50);
   const [raidMax, setRaidMax] = useState(80);
@@ -267,10 +135,17 @@ export default function KingdomWorld() {
   const suppressClickRef = useRef(false);
   const resourcesRef = useRef(resources);
   const raidTimerRef = useRef(raidTimer);
+  const gameStateRef = useRef(null);
   const searchCooldownRef = useRef({});
 
   useEffect(() => { resourcesRef.current = resources; }, [resources]);
   useEffect(() => { raidTimerRef.current = raidTimer; }, [raidTimer]);
+  useEffect(() => {
+    gameStateRef.current = {
+      region, mapData, buildings, resources, zonesUnlocked, troopPool, garrisons,
+      inventory, crafts, expeditions, raidTimer, raidLog, raidMin, raidMax, raidsPaused, devPopBonus,
+    };
+  });
 
   const houseCount = Object.values(buildings).filter((b) => b === "haus").length;
   const lagerCount = Object.values(buildings).filter((b) => b === "lager").length;
@@ -304,6 +179,7 @@ export default function KingdomWorld() {
     function onKey(e) {
       if (e.key === "Escape" && region && !gameOver) {
         setShowDevPanel(false);
+        setShowSettings(false);
         setShowPauseMenu((s) => !s);
       }
     }
@@ -375,6 +251,16 @@ export default function KingdomWorld() {
     }
   }, [raidWarning, region]);
 
+  // Autosave every 10s, always reading the freshest state via gameStateRef.
+  useEffect(() => {
+    if (!region) return;
+    const id = setInterval(() => {
+      if (!gameStateRef.current) return;
+      try { localStorage.setItem(SAVE_KEY, JSON.stringify(gameStateRef.current)); } catch { /* storage unavailable */ }
+    }, 10000);
+    return () => clearInterval(id);
+  }, [region]);
+
   useEffect(() => {
     if (!region || gameOver) return;
     const interval = setInterval(() => {
@@ -397,6 +283,10 @@ export default function KingdomWorld() {
         if (anyMarketTrade) setMarketPulse((p) => p + 1);
       }
 
+      if (t % 20 === 0 && kaserneCount > 0) {
+        setTroopPool((p) => Math.min(p + kaserneCount, kaserneCount * 5));
+      }
+
       setExpeditions((prev) => prev.map((e) => ({ ...e, remaining: e.remaining - 1 })).filter((e) => {
         if (e.remaining <= 0) {
           const def = NODE_DEFS[e.key];
@@ -412,6 +302,22 @@ export default function KingdomWorld() {
           const def = CRAFTS.find((x) => x.id === c.id);
           setInventory((inv) => ({ ...inv, [c.id]: (inv[c.id] || 0) + 1 }));
           flash(`Schmiede fertig: ${def.name}`);
+          return false;
+        }
+        return true;
+      }));
+
+      setZoneAssaults((prev) => prev.map((z) => ({ ...z, remaining: z.remaining - 1 })).filter((z) => {
+        if (z.remaining <= 0) {
+          const zone = ZONE_META[z.zoneId];
+          const village = mapData.npcVillages[z.zoneId];
+          if (village && z.strength >= village.defense) {
+            setZonesUnlocked((zu) => ({ ...zu, [z.zoneId]: true }));
+            setBuildings((b) => ({ ...b, [village.tileIndex]: "aussenposten" }));
+            flash(`Sieg! ${zone.name} erobert und mit einem Außenposten gesichert.`);
+          } else {
+            flash(`Angriff auf ${zone.name} gescheitert – die Truppen wurden aufgerieben.`);
+          }
           return false;
         }
         return true;
@@ -441,7 +347,9 @@ export default function KingdomWorld() {
       if (!raidsPaused) {
         setRaidTimer((prev) => {
           if (prev > 1) return prev - 1;
-          const damage = Math.max(10, 45 - mauerCount * 6);
+          const garrisonedTotal = Object.values(gameStateRef.current?.garrisons || {}).reduce((a, b) => a + b, 0);
+          const baseDamage = Math.max(10, 45 - mauerCount * 6);
+          const damage = Math.max(0, baseDamage - garrisonedTotal * 4);
           const cur = resourcesRef.current;
           let remaining = damage;
           const next = { ...cur };
@@ -452,18 +360,25 @@ export default function KingdomWorld() {
           });
           setResources(clampCap(next, cap));
           const total = next.gold + next.holz + next.stein + next.nahrung + next.erz;
-          flash(mauerCount > 0 ? `Feinde griffen an! Eure ${mauerCount} Mauer(n) haben viel abgewehrt. -${damage} Ressourcen` : `Feinde griffen ungehindert an! -${damage} Ressourcen. Baue Mauern zum Schutz!`);
-          setRaidLog((log) => [{ id: `${Date.now()}-${Math.random()}`, sec: t, damage, mauerCount }, ...log].slice(0, 20));
+          if (damage <= 0) {
+            flash(`Eure ${garrisonedTotal} stationierten Truppen haben den Angriff vollständig abgewehrt!`);
+          } else {
+            flash(mauerCount > 0 || garrisonedTotal > 0 ? `Feinde griffen an! Eure Verteidigung hat viel abgewehrt. -${damage} Ressourcen` : `Feinde griffen ungehindert an! -${damage} Ressourcen. Baue Mauern und Wachposten zum Schutz!`);
+          }
+          setRaidLog((log) => [{ id: `${Date.now()}-${Math.random()}`, sec: t, damage, mauerCount, garrisonedTotal }, ...log].slice(0, 20));
           if (total <= 5) setGameOver(true);
           return raidMin + Math.floor(Math.random() * Math.max(1, raidMax - raidMin));
         });
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [buildings, cap, region, gameOver, marktCount, mauerCount, flash, raidsPaused, raidMin, raidMax]);
+  }, [buildings, cap, region, gameOver, marktCount, mauerCount, kaserneCount, flash, raidsPaused, raidMin, raidMax, mapData]);
 
   function handleTileClick(index) {
     if (suppressClickRef.current) { suppressClickRef.current = false; return; }
+    const zoneId = zoneIndexOfTile(index);
+    if (!zonesUnlocked[zoneId]) { setZoneAttackPanel(zoneId); return; }
+
     const terrainType = terrain[index];
     const nodeKey = nodes[index];
 
@@ -530,6 +445,28 @@ export default function KingdomWorld() {
     setCrafts((prev) => [...prev, { id: craft.id, remaining: craft.time, total: craft.time }]);
   }
 
+  function startZoneAssault(zoneId) {
+    const zone = ZONE_META[zoneId];
+    const cost = ZONE_UNLOCK_COST[zone.tier];
+    if (zoneAssaults.some((z) => z.zoneId === zoneId)) { flash("Hier ist bereits ein Feldzug im Gange."); return; }
+    if (troopPool <= 0) { flash("Du hast keine Truppen im Reservepool. Baue eine Kaserne und warte, bis Truppen bereitstehen."); return; }
+    if (!canAfford(resources, cost)) { flash("Nicht genug Ressourcen für diesen Feldzug."); return; }
+    setResources((r) => pay(r, cost));
+    const strength = troopPool;
+    setTroopPool(0);
+    setZoneAssaults((prev) => [...prev, { zoneId, remaining: 25, total: 25, strength }]);
+    setZoneAttackPanel(null);
+    flash(`Feldzug gegen ${zone.name} gestartet …`);
+  }
+
+  function assignGarrison(tileIndex, delta) {
+    const current = garrisons[tileIndex] || 0;
+    if (delta > 0 && troopPool <= 0) return;
+    if (delta < 0 && current <= 0) return;
+    setGarrisons((g) => ({ ...g, [tileIndex]: current + delta }));
+    setTroopPool((p) => p - delta);
+  }
+
   function onPointerDown(e) { dragRef.current = { down: true, dragging: false, sx: e.clientX, sy: e.clientY, px: pan.x, py: pan.y }; }
   function onPointerMove(e) {
     const d = dragRef.current;
@@ -549,6 +486,11 @@ export default function KingdomWorld() {
     setMapData(generateMap());
     setBuildings({ [idx(TOWNHALL_ROW, TOWNHALL_COL)]: "rathaus" });
     setResources(START_RESOURCES);
+    setZonesUnlocked(initialZonesUnlocked());
+    setTroopPool(0);
+    setGarrisons({});
+    setZoneAttackPanel(null);
+    setZoneAssaults([]);
     setSelectedType(null);
     setExpeditions([]);
     setCrafts([]);
@@ -559,14 +501,45 @@ export default function KingdomWorld() {
     setJobDots([]);
     setRaidEnemies([]);
     setMarketPulse(0);
-    setRaidTimer(raidMin);
+    setRaidTimer(FIRST_RAID_DELAY);
     setGameOver(false);
     setRaidLog([]);
     setShowPauseMenu(false);
     tickRef.current = 0;
   }
 
-  if (!region) return <SpawnScreen onPick={setRegion} />;
+  function continueGame(saved) {
+    if (!saved) return;
+    setRegion(saved.region);
+    setMapData(saved.mapData);
+    setBuildings(saved.buildings);
+    setResources(saved.resources);
+    setZonesUnlocked(saved.zonesUnlocked || initialZonesUnlocked());
+    setTroopPool(saved.troopPool || 0);
+    setGarrisons(saved.garrisons || {});
+    setInventory(saved.inventory || { werkzeug: 0, schwert: 0, ruestung: 0 });
+    setCrafts(saved.crafts || []);
+    setExpeditions(saved.expeditions || []);
+    setRaidTimer(saved.raidTimer ?? FIRST_RAID_DELAY);
+    setRaidLog(saved.raidLog || []);
+    setRaidMin(saved.raidMin ?? 50);
+    setRaidMax(saved.raidMax ?? 80);
+    setRaidsPaused(saved.raidsPaused || false);
+    setDevPopBonus(saved.devPopBonus || 0);
+    setTutorialStep(null);
+    tickRef.current = 0;
+  }
+
+  function devUnlockNextZone() {
+    const next = ZONE_META.find((z) => z.tier > 0 && !zonesUnlocked[z.id]);
+    if (!next) { flash("Alle Zonen bereits freigeschaltet."); return; }
+    const village = npcVillages[next.id];
+    setZonesUnlocked((zu) => ({ ...zu, [next.id]: true }));
+    if (village) setBuildings((b) => ({ ...b, [village.tileIndex]: "aussenposten" }));
+    flash(`${next.name} freigeschaltet (Entwickler-Cheat).`);
+  }
+
+  if (!region) return <SpawnScreen onPick={setRegion} savedGame={savedGame} onContinue={() => continueGame(savedGame)} />;
 
   const TABS = [
     { id: "basis", label: "Basis", icon: Landmark },
@@ -574,18 +547,29 @@ export default function KingdomWorld() {
     { id: "ereignisse", label: "Ereignisse", icon: ScrollText },
   ];
 
+  const villageTileMap = {};
+  Object.entries(npcVillages).forEach(([zid, v]) => { villageTileMap[v.tileIndex] = Number(zid); });
+  const zoneCenterTile = {};
+  ZONE_META.forEach((z) => {
+    zoneCenterTile[z.id] = idx(z.rowStart + Math.floor(ZONE_ROWS / 2), z.colStart + Math.floor(ZONE_COLS / 2));
+  });
+
+  const rootClass = reduceMotion ? "reduce-motion" : "";
+
   return (
-    <div style={{ minHeight: "100vh", width: "100%", background: "linear-gradient(160deg, #BFE3D6 0%, #8FBFA8 45%, #4C8C6B 100%)", padding: "16px", fontFamily: "Inter, sans-serif", display: "flex", justifyContent: "center", boxSizing: "border-box" }}>
+    <div className={rootClass} style={{ minHeight: "100vh", width: "100%", background: "linear-gradient(160deg, #BFE3D6 0%, #8FBFA8 45%, #4C8C6B 100%)", padding: "16px", fontFamily: "Inter, sans-serif", display: "flex", justifyContent: "center", boxSizing: "border-box" }}>
       <style>{GLOBAL_STYLES}</style>
 
       <div style={{ width: "100%", maxWidth: "780px", display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
           <div style={{ fontFamily: "Cinzel, serif", fontSize: "19px", fontWeight: 700, color: "#1F3B2C" }}>Reich · {REGIONS[region].name}</div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#1F3B2C", fontWeight: 600, cursor: "pointer" }}>
-              <input type="checkbox" checked={villagersOn} onChange={(e) => setVillagersOn(e.target.checked)} />
-              <Users size={13} /> Bewohner ({population})
-            </label>
+            <div title="Bevölkerung" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#1F3B2C", fontWeight: 600 }}>
+              <Users size={13} /> {population}
+            </div>
+            <div title="Truppen im Reservepool" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#1F3B2C", fontWeight: 600 }}>
+              <Swords size={13} /> {troopPool}
+            </div>
             <button onClick={() => setShowPauseMenu(true)} title="Menü (Escape)" style={{ background: "rgba(37,68,51,0.18)", border: "none", borderRadius: "8px", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#1F3B2C" }}>
               <Menu size={16} />
             </button>
@@ -601,7 +585,7 @@ export default function KingdomWorld() {
 
         {raidWarning && !gameOver && (
           <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "#7A2E2E", color: "#FCEAEA", fontSize: "12px", fontWeight: 700, padding: "7px 11px", borderRadius: "8px", marginBottom: "10px" }}>
-            <Swords size={14} /> Angriff in {raidTimer}s – Mauern schützen dich!
+            <Swords size={14} /> Angriff in {raidTimer}s – Mauern und Wachposten schützen dich!
           </div>
         )}
         {message && !gameOver && (
@@ -618,6 +602,16 @@ export default function KingdomWorld() {
                 </div>
               );
             })}
+          </div>
+        )}
+        {zoneAssaults.length > 0 && !gameOver && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "5px", marginBottom: "10px" }}>
+            {zoneAssaults.map((z) => (
+              <div key={z.zoneId} style={{ background: "rgba(255,255,255,0.55)", borderRadius: "8px", padding: "6px 10px" }}>
+                <div style={{ fontSize: "11px", fontWeight: 600, color: "#1F3B2C", marginBottom: "3px" }}>Feldzug: {ZONE_META[z.zoneId].name} · noch {z.remaining}s</div>
+                <ProgressBar pct={100 - (z.remaining / z.total) * 100} color="#7A2E2E" />
+              </div>
+            ))}
           </div>
         )}
 
@@ -647,8 +641,8 @@ export default function KingdomWorld() {
           <>
             <div style={{ position: "relative", flex: 1 }}>
               <div onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerLeave={onPointerUp} onWheel={onWheel}
-                style={{ position: "relative", height: "min(68vh, 640px)", borderRadius: "12px", overflow: "hidden", background: "#2C5240", touchAction: "none", cursor: "grab", border: "3px solid #1F3B2C" }}>
-                <div style={{ position: "absolute", left: 0, top: 0, width: COLS * TILE, height: ROWS * TILE, transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: "top left" }}>
+                style={{ position: "relative", height: "min(68vh, 640px)", borderRadius: "12px", overflow: "hidden", background: "#2C5240", touchAction: "none", cursor: "grab", border: "3px solid #1F3B2C", perspective: effects3D ? "900px" : undefined }}>
+                <div style={{ position: "absolute", left: 0, top: 0, width: COLS * TILE, height: ROWS * TILE, transform: effects3D ? `perspective(900px) rotateX(20deg) translate(${pan.x}px, ${pan.y}px) scale(${zoom})` : `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: "top left" }}>
                   <div style={{ display: "grid", gridTemplateColumns: `repeat(${COLS}, ${TILE}px)`, gridTemplateRows: `repeat(${ROWS}, ${TILE}px)` }}>
                     {terrain.map((t, i) => {
                       const building = buildings[i];
@@ -656,15 +650,30 @@ export default function KingdomWorld() {
                       const bDef = building ? BUILDING_TYPES[building] : null;
                       const nDef = nodeKey ? NODE_DEFS[nodeKey] : null;
                       const isTownhall = building === "rathaus";
-                      const tileClass = ["kw-tile", t === "wasser" && !building ? "tile-water" : "", (bDef || isTownhall) ? "kw-building" : "", isTownhall ? "kw-townhall" : ""].filter(Boolean).join(" ");
+                      const zoneId = zoneIndexOfTile(i);
+                      const locked = !zonesUnlocked[zoneId];
+                      const isVillageTile = locked && villageTileMap[i] === zoneId;
+                      const tileClass = [
+                        "kw-tile",
+                        t === "wasser" && !building ? "tile-water" : "",
+                        (bDef || isTownhall) ? (effects3D ? "kw-building-3d" : "kw-building") : "",
+                        isTownhall ? "kw-townhall" : "",
+                      ].filter(Boolean).join(" ");
                       return (
-                        <div key={i} onClick={() => handleTileClick(i)} title={isTownhall ? "Rathaus" : bDef?.name || nDef?.name || t}
+                        <div key={i} onClick={() => handleTileClick(i)} title={locked ? "Gesperrtes Gebiet – anklicken zum Erobern" : isTownhall ? "Rathaus" : bDef?.name || nDef?.name || t}
                           className={tileClass}
                           style={{ width: TILE, height: TILE, position: "relative", background: bDef ? bDef.color : isTownhall ? "#8C5A2B" : getTileBg(region, t), border: "1px solid rgba(0,0,0,0.06)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                           {isTownhall && <Landmark size={15} color="#F3F7EE" />}
                           {bDef && <bDef.icon size={14} color="#F3F7EE" />}
+                          {isVillageTile && !building && <Flag size={13} color="#C24A4A" style={{ filter: "drop-shadow(0 0 2px rgba(0,0,0,0.6))" }} />}
                           {building === "markt" && <div key={`pulse-${marketPulse}`} className="market-pulse" />}
                           {!building && nDef && <nDef.icon size={14} color="#FFF7DE" style={{ filter: "drop-shadow(0 0 2px rgba(0,0,0,0.6))" }} />}
+                          {locked && <div className="zone-fog" />}
+                          {locked && !isVillageTile && i === zoneCenterTile[zoneId] && (
+                            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+                              <Lock size={12} color="#F3F7EE" style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.8))" }} />
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -722,14 +731,14 @@ export default function KingdomWorld() {
               Ziehen zum Verschieben, Scrollen zum Zoomen · Bäume direkt antippen zum Fällen · im Fluss nach Gold suchen · Escape = Menü
             </div>
             <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px" }}>
-              {Object.entries(BUILDING_TYPES).map(([key, def]) => {
+              {Object.entries(BUILDING_TYPES).filter(([, def]) => !def.notBuildable).map(([key, def]) => {
                 const Icon = def.icon; const affordable = canAfford(resources, def.cost); const selected = selectedType === key;
                 return (
                   <button key={key} className="kw-btn" onClick={() => setSelectedType(selected ? null : key)}
                     style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", padding: "8px 10px", borderRadius: "10px", border: selected ? "2px solid #1F3B2C" : "2px solid transparent", background: "#F3F7EE", cursor: "pointer", opacity: affordable ? 1 : 0.5, minWidth: "78px" }}>
                     <div style={{ width: "26px", height: "26px", borderRadius: "6px", background: def.color, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon size={14} color="#F3F7EE" /></div>
                     <div style={{ fontSize: "10.5px", fontWeight: 700, color: "#1F3B2C", textAlign: "center" }}>{def.name}</div>
-                    <div style={{ fontSize: "9.5px", color: "#5C6B5A", textAlign: "center" }}>{Object.entries(def.cost).map(([k, v]) => `${v} ${RESOURCE_META[k].label}`).join(", ")}</div>
+                    <div style={{ fontSize: "9.5px", color: "#5C6B5A", textAlign: "center" }}>{Object.entries(def.cost).map(([k, v]) => `${v} ${RESOURCE_META[k].label}`).join(", ") || "kostenlos"}</div>
                   </button>
                 );
               })}
@@ -798,12 +807,42 @@ export default function KingdomWorld() {
             {raidLog.length === 0 && <div style={{ fontSize: "13px", color: "#5C6B5A", padding: "10px" }}>Noch keine Angriffe erlebt.</div>}
             {raidLog.map((e) => (
               <div key={e.id} style={{ background: "#F3F7EE", borderRadius: "8px", padding: "9px 12px", fontSize: "12.5px", color: "#1F3B2C" }}>
-                Sekunde {e.sec}: <strong>-{e.damage} Ressourcen</strong> · Mauern zum Zeitpunkt: {e.mauerCount}
+                Sekunde {e.sec}: <strong>-{e.damage} Ressourcen</strong> · Mauern: {e.mauerCount} · stationierte Truppen: {e.garrisonedTotal || 0}
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {zoneAttackPanel !== null && (() => {
+        const zone = ZONE_META[zoneAttackPanel];
+        const village = npcVillages[zoneAttackPanel];
+        const cost = ZONE_UNLOCK_COST[zone.tier];
+        const affordable = canAfford(resources, cost);
+        const ongoing = zoneAssaults.find((z) => z.zoneId === zoneAttackPanel);
+        return (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(20,30,24,0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 58 }} onClick={() => setZoneAttackPanel(null)}>
+            <div style={{ background: "#F3F7EE", borderRadius: "16px", padding: "20px", width: "280px", textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+              <Lock size={22} color="#7A2E2E" style={{ marginBottom: "8px" }} />
+              <div style={{ fontFamily: "Cinzel, serif", fontSize: "16px", fontWeight: 700, color: "#1F3B2C", marginBottom: "8px" }}>{zone.name} (gesperrt)</div>
+              <div style={{ fontSize: "12.5px", color: "#3A3630", lineHeight: 1.5, marginBottom: "12px" }}>
+                Verteidigung des Dorfs: {village ? village.defense : "?"}<br />
+                Dein Truppenpool: {troopPool}<br />
+                Kosten: {Object.entries(cost).map(([k, v]) => `${v} ${RESOURCE_META[k].label}`).join(", ")}
+              </div>
+              {ongoing ? (
+                <div style={{ fontSize: "13px", color: "#5C6B5A" }}>Feldzug läuft … noch {ongoing.remaining}s</div>
+              ) : (
+                <button className="kw-btn" onClick={() => startZoneAssault(zoneAttackPanel)} disabled={!affordable || troopPool <= 0}
+                  style={{ padding: "10px 16px", borderRadius: "10px", border: "none", background: affordable && troopPool > 0 ? "#254433" : "#8C8375", color: "#F3F7EE", fontWeight: 600, fontSize: "13px", cursor: affordable && troopPool > 0 ? "pointer" : "default", width: "100%" }}>
+                  Angriff starten (alle {troopPool} Truppen)
+                </button>
+              )}
+              <button className="kw-btn" onClick={() => setZoneAttackPanel(null)} style={{ ...menuBtnStyle, marginTop: "10px" }}>Schließen</button>
+            </div>
+          </div>
+        );
+      })()}
 
       {showPauseMenu && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(20,30,24,0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
@@ -811,6 +850,7 @@ export default function KingdomWorld() {
             <div style={{ fontFamily: "Cinzel, serif", fontSize: "18px", fontWeight: 700, color: "#1F3B2C", marginBottom: "16px" }}>Menü</div>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               <button className="kw-btn" onClick={() => setShowPauseMenu(false)} style={menuBtnStyle}>Weiterspielen</button>
+              <button className="kw-btn" onClick={() => { setShowPauseMenu(false); setShowSettings(true); }} style={menuBtnStyle}>Einstellungen</button>
               <button className="kw-btn" onClick={() => setShowDevPanel(true)} style={menuBtnStyle}><Settings size={13} style={{ marginRight: "6px" }} />Entwickler-Menü</button>
               <button className="kw-btn" onClick={restartGame} style={menuBtnStyle}>Neu starten</button>
               <button className="kw-btn" onClick={() => { setShowPauseMenu(false); setRegion(null); }} style={{ ...menuBtnStyle, background: "rgba(122,46,46,0.15)", color: "#7A2E2E" }}>Zur Regionswahl</button>
@@ -819,9 +859,27 @@ export default function KingdomWorld() {
         </div>
       )}
 
+      {showSettings && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(20,30,24,0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 61 }}>
+          <div style={{ background: "#F3F7EE", borderRadius: "16px", padding: "22px", width: "290px" }}>
+            <div style={{ fontFamily: "Cinzel, serif", fontSize: "16px", fontWeight: 700, color: "#1F3B2C", marginBottom: "14px" }}>Einstellungen</div>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#1F3B2C", marginBottom: "10px", cursor: "pointer" }}>
+              <input type="checkbox" checked={villagersOn} onChange={(e) => setVillagersOn(e.target.checked)} /> Bewohner anzeigen
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#1F3B2C", marginBottom: "10px", cursor: "pointer" }}>
+              <input type="checkbox" checked={effects3D} onChange={(e) => setEffects3D(e.target.checked)} /> 3D-Effekt (Kippung + Schatten)
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#1F3B2C", marginBottom: "14px", cursor: "pointer" }}>
+              <input type="checkbox" checked={reduceMotion} onChange={(e) => setReduceMotion(e.target.checked)} /> Reduzierte Bewegung (Animationen aus)
+            </label>
+            <button className="kw-btn" onClick={() => setShowSettings(false)} style={menuBtnStyle}>Schließen</button>
+          </div>
+        </div>
+      )}
+
       {showDevPanel && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(20,30,24,0.65)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60 }}>
-          <div style={{ background: "#F3F7EE", borderRadius: "16px", padding: "22px", width: "300px" }}>
+          <div style={{ background: "#F3F7EE", borderRadius: "16px", padding: "22px", width: "300px", maxHeight: "85vh", overflowY: "auto" }}>
             <div style={{ fontFamily: "Cinzel, serif", fontSize: "16px", fontWeight: 700, color: "#1F3B2C", marginBottom: "14px" }}>Entwickler-Menü</div>
             <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#1F3B2C", marginBottom: "12px", cursor: "pointer" }}>
               <input type="checkbox" checked={raidsPaused} onChange={(e) => setRaidsPaused(e.target.checked)} /> Angriffe pausieren
@@ -833,8 +891,14 @@ export default function KingdomWorld() {
             </div>
             <button className="kw-btn" onClick={() => setRaidTimer(1)} style={{ ...menuBtnStyle, marginBottom: "8px" }}>Angriff jetzt auslösen</button>
 
-            <div style={{ fontSize: "12px", color: "#1F3B2C", margin: "14px 0 4px", fontWeight: 700 }}>Welt</div>
-            <button className="kw-btn" onClick={restartGame} style={{ ...menuBtnStyle, marginBottom: "12px" }}>🎲 Neue Zufallswelt generieren</button>
+            <div style={{ fontSize: "12px", color: "#1F3B2C", margin: "14px 0 4px", fontWeight: 700 }}>Zonen &amp; Truppen</div>
+            <button className="kw-btn" onClick={devUnlockNextZone} style={{ ...menuBtnStyle, marginBottom: "8px" }}>Nächste Zone freischalten</button>
+            <div style={{ fontSize: "12px", color: "#1F3B2C", marginBottom: "4px" }}>Truppenpool setzen</div>
+            <input type="number" value={troopPool} onChange={(e) => setTroopPool(Number(e.target.value))} style={{ ...inputStyle, marginBottom: "12px" }} />
+
+            <div style={{ fontSize: "12px", color: "#1F3B2C", margin: "4px 0 4px", fontWeight: 700 }}>Welt</div>
+            <button className="kw-btn" onClick={restartGame} style={{ ...menuBtnStyle, marginBottom: "8px" }}>🎲 Neue Zufallswelt generieren</button>
+            <button className="kw-btn" onClick={() => { localStorage.removeItem(SAVE_KEY); flash("Spielstand gelöscht."); }} style={{ ...menuBtnStyle, marginBottom: "12px" }}>Spielstand löschen</button>
 
             <div style={{ fontSize: "12px", color: "#1F3B2C", margin: "4px 0 4px", fontWeight: 700 }}>Ressourcen setzen</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginBottom: "10px" }}>
@@ -867,6 +931,7 @@ export default function KingdomWorld() {
             ) : (() => {
               const def = BUILDING_TYPES[buildings[selectedInfo]];
               const Icon = def.icon;
+              const garrisonCount = garrisons[selectedInfo] || 0;
               return (
                 <>
                   <div style={{ width: "36px", height: "36px", borderRadius: "8px", background: def.color, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 8px" }}><Icon size={18} color="#F3F7EE" /></div>
@@ -878,8 +943,17 @@ export default function KingdomWorld() {
                       : def.capBonus ? `Erhöht Lagerkapazität um ${def.capBonus}`
                       : def.troopBonus ? `Erhöht maximale Trupps um ${def.troopBonus}`
                       : def.unlocksCraft ? "Schaltet die Schmiede frei"
+                      : def.garrisonBuilding ? "Stationiere hier Truppen, um Angriffe abzuwehren."
+                      : def.notBuildable ? "Zeichen deiner Eroberung dieses Gebiets."
                       : "Keine aktive Produktion."}
                   </div>
+                  {def.garrisonBuilding && (
+                    <div style={{ marginTop: "10px", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
+                      <button className="kw-btn" onClick={() => assignGarrison(selectedInfo, -1)} style={zoomBtnStyle}>-</button>
+                      <div style={{ fontSize: "13px", fontWeight: 700, color: "#1F3B2C", minWidth: "80px" }}>{garrisonCount} stationiert</div>
+                      <button className="kw-btn" onClick={() => assignGarrison(selectedInfo, 1)} style={zoomBtnStyle}>+</button>
+                    </div>
+                  )}
                 </>
               );
             })()}
