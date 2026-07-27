@@ -49,6 +49,47 @@ const RESOURCE_META = {
   erz: { label: "Erz", icon: Pickaxe, color: "#9AA0A6" },
 };
 
+const JOB_META = {
+  holzfaeller: { label: "Holzfäller", color: RESOURCE_META.holz.color },
+  steinbruch: { label: "Steinmetz", color: RESOURCE_META.stein.color },
+  bauernhof: { label: "Bauer", color: RESOURCE_META.nahrung.color },
+  markt: { label: "Händler", color: RESOURCE_META.gold.color },
+};
+
+const GLOBAL_STYLES = `
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+@keyframes marketPulse {
+  0% { box-shadow: 0 0 0 0 rgba(216,169,78,0.55); }
+  100% { box-shadow: 0 0 16px 8px rgba(216,169,78,0); }
+}
+.market-pulse { position: absolute; inset: 0; border-radius: 4px; animation: marketPulse 0.7s ease-out; pointer-events: none; }
+
+@keyframes waterShimmer {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.08); }
+}
+.tile-water { animation: waterShimmer 3.5s ease-in-out infinite; }
+
+@keyframes dotBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1.5px); }
+}
+.dot-bob { animation: dotBob 1.6s ease-in-out infinite; }
+
+.kw-btn { transition: transform 0.12s ease, filter 0.12s ease; }
+.kw-btn:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+.kw-btn:active:not(:disabled) { transform: translateY(0); filter: brightness(0.95); }
+
+.kw-tile { transition: filter 0.12s ease; }
+.kw-tile:hover { filter: brightness(1.18); }
+
+.kw-building { box-shadow: inset 0 -3px 0 rgba(0,0,0,0.18), inset 0 2px 0 rgba(255,255,255,0.14); }
+
+.kw-townhall { position: relative; }
+.kw-townhall::after { content: ""; position: absolute; top: -4px; left: 50%; transform: translateX(-50%); width: 3px; height: 9px; background: #C24A4A; border-radius: 1px 1px 0 0; }
+`;
+
 const NODE_DEFS = {
   holz: { name: "Waldlager", icon: TreePine, cost: { nahrung: 5 }, time: 8, reward: { holz: 40 } },
   fels: { name: "Felsenlager", icon: Mountain, cost: { nahrung: 8 }, time: 12, reward: { stein: 35 } },
@@ -168,15 +209,15 @@ function ProgressBar({ pct, color }) {
 function SpawnScreen({ onPick }) {
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(160deg, #BFE3D6 0%, #8FBFA8 45%, #4C8C6B 100%)", padding: "24px", fontFamily: "Inter, sans-serif", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');`}</style>
+      <style>{GLOBAL_STYLES}</style>
       <div style={{ maxWidth: "420px", width: "100%", background: "#F3F7EE", borderRadius: "16px", padding: "26px 22px", textAlign: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.2)" }}>
         <div style={{ fontFamily: "Cinzel, serif", fontSize: "22px", fontWeight: 700, color: "#1F3B2C", marginBottom: "8px" }}>Wähle deinen Startort</div>
         <div style={{ fontSize: "12.5px", color: "#5C6B5A", marginBottom: "18px" }}>Vereinfachte Vorschau: die Region ändert aktuell nur das Farbthema deiner Karte.</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
           {Object.entries(REGIONS).map(([key, r]) => (
-            <button key={key} onClick={() => onPick(key)} style={{ padding: "14px 8px", borderRadius: "10px", border: "none", background: r.palette.grass, color: "#1F3B2C", fontWeight: 700, fontSize: "13px", cursor: "pointer" }}>{r.name}</button>
+            <button key={key} className="kw-btn" onClick={() => onPick(key)} style={{ padding: "14px 8px", borderRadius: "10px", border: "none", background: r.palette.grass, color: "#1F3B2C", fontWeight: 700, fontSize: "13px", cursor: "pointer" }}>{r.name}</button>
           ))}
-          <button onClick={() => onPick(Object.keys(REGIONS)[Math.floor(Math.random() * Object.keys(REGIONS).length)])}
+          <button className="kw-btn" onClick={() => onPick(Object.keys(REGIONS)[Math.floor(Math.random() * Object.keys(REGIONS).length)])}
             style={{ gridColumn: "1 / -1", padding: "12px", borderRadius: "10px", border: "2px dashed #1F3B2C", background: "transparent", color: "#1F3B2C", fontWeight: 700, fontSize: "13px", cursor: "pointer" }}>🎲 Zufällig</button>
         </div>
       </div>
@@ -204,6 +245,9 @@ export default function KingdomWorld() {
   const [villagerDots, setVillagerDots] = useState([]);
   const [guardDots, setGuardDots] = useState([]);
   const [chickenDots, setChickenDots] = useState([]);
+  const [jobDots, setJobDots] = useState([]);
+  const [raidEnemies, setRaidEnemies] = useState([]);
+  const [marketPulse, setMarketPulse] = useState(0);
   const [message, setMessage] = useState(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 56 });
@@ -222,9 +266,11 @@ export default function KingdomWorld() {
   const dragRef = useRef({ down: false, dragging: false, sx: 0, sy: 0, px: 0, py: 0 });
   const suppressClickRef = useRef(false);
   const resourcesRef = useRef(resources);
+  const raidTimerRef = useRef(raidTimer);
   const searchCooldownRef = useRef({});
 
   useEffect(() => { resourcesRef.current = resources; }, [resources]);
+  useEffect(() => { raidTimerRef.current = raidTimer; }, [raidTimer]);
 
   const houseCount = Object.values(buildings).filter((b) => b === "haus").length;
   const lagerCount = Object.values(buildings).filter((b) => b === "lager").length;
@@ -232,10 +278,14 @@ export default function KingdomWorld() {
   const mauerCount = Object.values(buildings).filter((b) => b === "mauer").length;
   const marktCount = Object.values(buildings).filter((b) => b === "markt").length;
   const bauernhofIndices = Object.entries(buildings).filter(([, v]) => v === "bauernhof").map(([k]) => Number(k));
+  const holzfaellerIndices = Object.entries(buildings).filter(([, v]) => v === "holzfaeller").map(([k]) => Number(k));
+  const steinbruchIndices = Object.entries(buildings).filter(([, v]) => v === "steinbruch").map(([k]) => Number(k));
+  const marktIndices = Object.entries(buildings).filter(([, v]) => v === "markt").map(([k]) => Number(k));
   const hasSchmiede = Object.values(buildings).includes("schmiede");
   const population = 2 + houseCount * 2 + devPopBonus;
   const cap = BASE_CAP + lagerCount * 100;
   const maxTroops = 1 + kaserneCount;
+  const raidWarning = raidTimer <= 10 && !raidsPaused;
 
   const flash = useCallback((text) => {
     setMessage(text);
@@ -296,12 +346,43 @@ export default function KingdomWorld() {
   }, [bauernhofIndices.length, region]);
 
   useEffect(() => {
+    if (!region) return;
+    const jobList = [
+      ...holzfaellerIndices.map((homeIdx) => ({ type: "holzfaeller", homeIdx })),
+      ...steinbruchIndices.map((homeIdx) => ({ type: "steinbruch", homeIdx })),
+      ...bauernhofIndices.map((homeIdx) => ({ type: "bauernhof", homeIdx })),
+      ...marktIndices.map((homeIdx) => ({ type: "markt", homeIdx })),
+    ].slice(0, 24);
+    setJobDots((prev) => jobList.map((job, i) => {
+      const existing = prev[i];
+      const r = Math.floor(job.homeIdx / COLS), c = job.homeIdx % COLS;
+      const hx = ((c + 0.5) / COLS) * 100, hy = ((r + 0.5) / ROWS) * 100;
+      if (existing && existing.homeIdx === job.homeIdx && existing.type === job.type) return existing;
+      return { id: `${job.type}-${job.homeIdx}`, type: job.type, homeIdx: job.homeIdx, hx, hy, x: hx, y: hy };
+    }));
+  }, [holzfaellerIndices.length, steinbruchIndices.length, bauernhofIndices.length, marktIndices.length, region]);
+
+  useEffect(() => {
+    if (!region) { setRaidEnemies([]); return; }
+    if (raidWarning) {
+      setRaidEnemies((prev) => prev.length ? prev : Array.from({ length: 2 + Math.floor(Math.random() * 3) }, (_, i) => ({
+        id: i,
+        sx: Math.random() < 0.5 ? 1 + Math.random() * 3 : 96 + Math.random() * 3,
+        sy: 3 + Math.random() * 88,
+      })));
+    } else {
+      setRaidEnemies([]);
+    }
+  }, [raidWarning, region]);
+
+  useEffect(() => {
     if (!region || gameOver) return;
     const interval = setInterval(() => {
       tickRef.current += 1;
       const t = tickRef.current;
 
       if (t % 4 === 0) {
+        let anyMarketTrade = false;
         setResources((prev) => {
           const gain = {};
           Object.values(buildings).forEach((type) => {
@@ -310,9 +391,10 @@ export default function KingdomWorld() {
           });
           let next = { ...prev };
           Object.entries(gain).forEach(([k, v]) => (next[k] = (next[k] || 0) + v));
-          for (let i = 0; i < marktCount; i++) if (next.nahrung >= 8) { next.nahrung -= 8; next.gold += 10; }
+          for (let i = 0; i < marktCount; i++) if (next.nahrung >= 8) { next.nahrung -= 8; next.gold += 10; anyMarketTrade = true; }
           return clampCap(next, cap);
         });
+        if (anyMarketTrade) setMarketPulse((p) => p + 1);
       }
 
       setExpeditions((prev) => prev.map((e) => ({ ...e, remaining: e.remaining - 1 })).filter((e) => {
@@ -340,12 +422,21 @@ export default function KingdomWorld() {
         const ny = clamp(v.y + (Math.random() * 10 - 5), 4, 96);
         return isPassable(pctToIndex(nx, ny)) ? { ...v, x: nx, y: ny } : v;
       }));
+      const isRaidAlert = !raidsPaused && raidTimerRef.current <= 10;
       setGuardDots((prev) => prev.map((v) => {
+        if (isRaidAlert) {
+          const thX = ((TOWNHALL_COL + 0.5) / COLS) * 100;
+          const thY = ((TOWNHALL_ROW + 0.5) / ROWS) * 100;
+          const nx = clamp(v.x + clamp(thX - v.x, -6, 6), 4, 96);
+          const ny = clamp(v.y + clamp(thY - v.y, -6, 6), 4, 96);
+          return isPassable(pctToIndex(nx, ny)) ? { ...v, x: nx, y: ny } : v;
+        }
         const nx = clamp(v.x + (Math.random() * 8 - 4), 4, 96);
         const ny = clamp(v.y + (Math.random() * 8 - 4), 4, 96);
         return isPassable(pctToIndex(nx, ny)) ? { ...v, x: nx, y: ny } : v;
       }));
       setChickenDots((prev) => prev.map((c) => ({ ...c, x: clamp(c.hx + (Math.random() * 8 - 4), 0, 100), y: clamp(c.hy + (Math.random() * 8 - 4), 0, 100) })));
+      setJobDots((prev) => prev.map((j) => ({ ...j, x: clamp(j.hx + (Math.random() * 8 - 4), 0, 100), y: clamp(j.hy + (Math.random() * 8 - 4), 0, 100) })));
 
       if (!raidsPaused) {
         setRaidTimer((prev) => {
@@ -465,6 +556,9 @@ export default function KingdomWorld() {
     setVillagerDots([]);
     setGuardDots([]);
     setChickenDots([]);
+    setJobDots([]);
+    setRaidEnemies([]);
+    setMarketPulse(0);
     setRaidTimer(raidMin);
     setGameOver(false);
     setRaidLog([]);
@@ -479,11 +573,10 @@ export default function KingdomWorld() {
     { id: "schmiede", label: "Schmiede", icon: Hammer },
     { id: "ereignisse", label: "Ereignisse", icon: ScrollText },
   ];
-  const raidWarning = raidTimer <= 10 && !raidsPaused;
 
   return (
     <div style={{ minHeight: "100vh", width: "100%", background: "linear-gradient(160deg, #BFE3D6 0%, #8FBFA8 45%, #4C8C6B 100%)", padding: "16px", fontFamily: "Inter, sans-serif", display: "flex", justifyContent: "center", boxSizing: "border-box" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');`}</style>
+      <style>{GLOBAL_STYLES}</style>
 
       <div style={{ width: "100%", maxWidth: "780px", display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
@@ -533,7 +626,7 @@ export default function KingdomWorld() {
             {TABS.map((t) => {
               const Icon = t.icon; const active = tab === t.id;
               return (
-                <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "8px", borderRadius: "8px", border: "none", cursor: "pointer", background: active ? "#3E6B4A" : "rgba(37,68,51,0.18)", color: active ? "#F3F7EE" : "#254433", fontWeight: 600, fontSize: "13px" }}>
+                <button key={t.id} className="kw-btn" onClick={() => setTab(t.id)} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "8px", borderRadius: "8px", border: "none", cursor: "pointer", background: active ? "#3E6B4A" : "rgba(37,68,51,0.18)", color: active ? "#F3F7EE" : "#254433", fontWeight: 600, fontSize: "13px" }}>
                   <Icon size={14} /> {t.label}
                 </button>
               );
@@ -546,7 +639,7 @@ export default function KingdomWorld() {
             <Skull size={30} color="#7A2E2E" style={{ marginBottom: "10px" }} />
             <div style={{ fontFamily: "Cinzel, serif", fontSize: "20px", fontWeight: 700, color: "#1F3B2C", marginBottom: "8px" }}>Deine Stadt ist gefallen</div>
             <div style={{ fontSize: "14px", color: "#3A3630", marginBottom: "18px" }}>Zu viele unbeantwortete Angriffe haben eure Vorräte aufgezehrt.</div>
-            <button onClick={restartGame} style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 18px", borderRadius: "10px", border: "none", background: "#254433", color: "#F3F7EE", fontWeight: 600, fontSize: "14px", cursor: "pointer" }}>
+            <button className="kw-btn" onClick={restartGame} style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 18px", borderRadius: "10px", border: "none", background: "#254433", color: "#F3F7EE", fontWeight: 600, fontSize: "14px", cursor: "pointer" }}>
               <RotateCcw size={16} /> Neu beginnen
             </button>
           </div>
@@ -563,44 +656,50 @@ export default function KingdomWorld() {
                       const bDef = building ? BUILDING_TYPES[building] : null;
                       const nDef = nodeKey ? NODE_DEFS[nodeKey] : null;
                       const isTownhall = building === "rathaus";
+                      const tileClass = ["kw-tile", t === "wasser" && !building ? "tile-water" : "", (bDef || isTownhall) ? "kw-building" : "", isTownhall ? "kw-townhall" : ""].filter(Boolean).join(" ");
                       return (
                         <div key={i} onClick={() => handleTileClick(i)} title={isTownhall ? "Rathaus" : bDef?.name || nDef?.name || t}
+                          className={tileClass}
                           style={{ width: TILE, height: TILE, position: "relative", background: bDef ? bDef.color : isTownhall ? "#8C5A2B" : getTileBg(region, t), border: "1px solid rgba(0,0,0,0.06)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                           {isTownhall && <Landmark size={15} color="#F3F7EE" />}
                           {bDef && <bDef.icon size={14} color="#F3F7EE" />}
+                          {building === "markt" && <div key={`pulse-${marketPulse}`} className="market-pulse" />}
                           {!building && nDef && <nDef.icon size={14} color="#FFF7DE" style={{ filter: "drop-shadow(0 0 2px rgba(0,0,0,0.6))" }} />}
                         </div>
                       );
                     })}
                   </div>
                   {villagerDots.map((v) => (
-                    <div key={`v${v.id}`} style={{ position: "absolute", left: `${v.x}%`, top: `${v.y}%`, width: "6px", height: "6px", borderRadius: "50%", background: "#F3E7C9", transition: "left 1s linear, top 1s linear", boxShadow: "0 0 0 1.5px rgba(0,0,0,0.4)" }} />
+                    <div key={`v${v.id}`} className="dot-bob" title="Dorfbewohner" style={{ position: "absolute", left: `${v.x}%`, top: `${v.y}%`, width: "6px", height: "6px", borderRadius: "50%", background: "#F3E7C9", transition: "left 1s linear, top 1s linear", boxShadow: "0 0 0 1.5px rgba(0,0,0,0.4)" }} />
+                  ))}
+                  {jobDots.map((j) => (
+                    <div key={j.id} className="dot-bob" title={JOB_META[j.type].label} style={{ position: "absolute", left: `${j.x}%`, top: `${j.y}%`, width: "7px", height: "7px", borderRadius: "50%", background: JOB_META[j.type].color, transition: "left 1s linear, top 1s linear", boxShadow: "0 0 0 1.5px rgba(0,0,0,0.45)" }} />
                   ))}
                   {guardDots.map((v) => (
-                    <div key={`g${v.id}`} style={{ position: "absolute", left: `${v.x}%`, top: `${v.y}%`, width: "7px", height: "7px", borderRadius: "2px", background: "#A13A3A", transition: "left 1s linear, top 1s linear", boxShadow: "0 0 0 1.5px rgba(0,0,0,0.4)" }} title="Wache" />
+                    <div key={`g${v.id}`} style={{ position: "absolute", left: `${v.x}%`, top: `${v.y}%`, width: raidWarning ? "8px" : "7px", height: raidWarning ? "8px" : "7px", borderRadius: "2px", background: raidWarning ? "#E8524A" : "#A13A3A", transition: "left 1s linear, top 1s linear, background 0.3s, width 0.3s, height 0.3s", boxShadow: raidWarning ? "0 0 0 2px rgba(232,82,74,0.5)" : "0 0 0 1.5px rgba(0,0,0,0.4)" }} title="Wache" />
                   ))}
                   {chickenDots.map((c) => (
                     <div key={`c${c.id}`} style={{ position: "absolute", left: `${c.x}%`, top: `${c.y}%`, transition: "left 1.2s linear, top 1.2s linear" }}>
                       <Egg size={8} color="#F5F0DA" style={{ filter: "drop-shadow(0 0 1px rgba(0,0,0,0.5))" }} />
                     </div>
                   ))}
-                  {raidWarning && (() => {
+                  {raidWarning && raidEnemies.map((en) => {
                     const thX = ((TOWNHALL_COL + 0.5) / COLS) * 100;
                     const thY = ((TOWNHALL_ROW + 0.5) / ROWS) * 100;
-                    const progress = (10 - raidTimer) / 10;
-                    const ex = 2 + (thX - 2) * progress;
-                    const ey = 2 + (thY - 2) * progress;
+                    const progress = clamp((10 - raidTimer) / 10, 0, 1);
+                    const ex = en.sx + (thX - en.sx) * progress;
+                    const ey = en.sy + (thY - en.sy) * progress;
                     return (
-                      <div style={{ position: "absolute", left: `${ex}%`, top: `${ey}%`, transition: "left 1s linear, top 1s linear" }}>
+                      <div key={`enemy-${en.id}`} style={{ position: "absolute", left: `${ex}%`, top: `${ey}%`, transition: "left 1s linear, top 1s linear" }}>
                         <Swords size={13} color="#C24A4A" style={{ filter: "drop-shadow(0 0 2px rgba(0,0,0,0.7))" }} />
                       </div>
                     );
-                  })()}
+                  })}
                 </div>
                 <div style={{ position: "absolute", bottom: "8px", right: "8px", display: "flex", flexDirection: "column", gap: "5px" }}>
-                  <button onClick={() => setZoom((z) => Math.min(2.2, z + 0.2))} style={zoomBtnStyle}><ZoomIn size={14} /></button>
-                  <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.2))} style={zoomBtnStyle}><ZoomOut size={14} /></button>
-                  <button onClick={resetView} style={zoomBtnStyle}><RotateCcw size={14} /></button>
+                  <button className="kw-btn" onClick={() => setZoom((z) => Math.min(2.2, z + 0.2))} style={zoomBtnStyle}><ZoomIn size={14} /></button>
+                  <button className="kw-btn" onClick={() => setZoom((z) => Math.max(0.5, z - 0.2))} style={zoomBtnStyle}><ZoomOut size={14} /></button>
+                  <button className="kw-btn" onClick={resetView} style={zoomBtnStyle}><RotateCcw size={14} /></button>
                 </div>
               </div>
 
@@ -626,7 +725,7 @@ export default function KingdomWorld() {
               {Object.entries(BUILDING_TYPES).map(([key, def]) => {
                 const Icon = def.icon; const affordable = canAfford(resources, def.cost); const selected = selectedType === key;
                 return (
-                  <button key={key} onClick={() => setSelectedType(selected ? null : key)}
+                  <button key={key} className="kw-btn" onClick={() => setSelectedType(selected ? null : key)}
                     style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", padding: "8px 10px", borderRadius: "10px", border: selected ? "2px solid #1F3B2C" : "2px solid transparent", background: "#F3F7EE", cursor: "pointer", opacity: affordable ? 1 : 0.5, minWidth: "78px" }}>
                     <div style={{ width: "26px", height: "26px", borderRadius: "6px", background: def.color, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon size={14} color="#F3F7EE" /></div>
                     <div style={{ fontSize: "10.5px", fontWeight: 700, color: "#1F3B2C", textAlign: "center" }}>{def.name}</div>
@@ -637,7 +736,7 @@ export default function KingdomWorld() {
               {Object.entries(TOOLS).map(([key, def]) => {
                 const Icon = def.icon; const affordable = canAfford(resources, def.cost); const selected = selectedType === key;
                 return (
-                  <button key={key} onClick={() => setSelectedType(selected ? null : key)}
+                  <button key={key} className="kw-btn" onClick={() => setSelectedType(selected ? null : key)}
                     style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", padding: "8px 10px", borderRadius: "10px", border: selected ? "2px solid #1F3B2C" : "2px dashed #5C6B5A", background: "#F3F7EE", cursor: "pointer", opacity: affordable ? 1 : 0.5, minWidth: "78px" }}>
                     <div style={{ width: "26px", height: "26px", borderRadius: "6px", background: def.color, display: "flex", alignItems: "center", justifyContent: "center" }}><Icon size={14} color="#F3F7EE" /></div>
                     <div style={{ fontSize: "10.5px", fontWeight: 700, color: "#1F3B2C", textAlign: "center" }}>{def.name}</div>
@@ -679,7 +778,7 @@ export default function KingdomWorld() {
                           <div style={{ fontWeight: 700, color: "#1F3B2C", fontSize: "14px" }}>{craft.name}</div>
                           <div style={{ fontSize: "12px", color: "#5C6B5A" }}>Kosten: {Object.entries(craft.cost).map(([k, v]) => `${v} ${RESOURCE_META[k].label}`).join(", ")} · {craft.time}s</div>
                         </div>
-                        <button onClick={() => startCraft(craft)} disabled={!!active || !affordable}
+                        <button className="kw-btn" onClick={() => startCraft(craft)} disabled={!!active || !affordable}
                           style={{ padding: "8px 14px", borderRadius: "8px", border: "none", fontWeight: 600, fontSize: "13px", background: active ? "#8C8375" : "#4A4A48", color: "#F3F7EE", cursor: active || !affordable ? "default" : "pointer" }}>
                           {active ? `${active.remaining}s` : "Schmieden"}
                         </button>
@@ -711,10 +810,10 @@ export default function KingdomWorld() {
           <div style={{ background: "#F3F7EE", borderRadius: "16px", padding: "22px", width: "280px", textAlign: "center" }}>
             <div style={{ fontFamily: "Cinzel, serif", fontSize: "18px", fontWeight: 700, color: "#1F3B2C", marginBottom: "16px" }}>Menü</div>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <button onClick={() => setShowPauseMenu(false)} style={menuBtnStyle}>Weiterspielen</button>
-              <button onClick={() => setShowDevPanel(true)} style={menuBtnStyle}><Settings size={13} style={{ marginRight: "6px" }} />Entwickler-Menü</button>
-              <button onClick={restartGame} style={menuBtnStyle}>Neu starten</button>
-              <button onClick={() => { setShowPauseMenu(false); setRegion(null); }} style={{ ...menuBtnStyle, background: "rgba(122,46,46,0.15)", color: "#7A2E2E" }}>Zur Regionswahl</button>
+              <button className="kw-btn" onClick={() => setShowPauseMenu(false)} style={menuBtnStyle}>Weiterspielen</button>
+              <button className="kw-btn" onClick={() => setShowDevPanel(true)} style={menuBtnStyle}><Settings size={13} style={{ marginRight: "6px" }} />Entwickler-Menü</button>
+              <button className="kw-btn" onClick={restartGame} style={menuBtnStyle}>Neu starten</button>
+              <button className="kw-btn" onClick={() => { setShowPauseMenu(false); setRegion(null); }} style={{ ...menuBtnStyle, background: "rgba(122,46,46,0.15)", color: "#7A2E2E" }}>Zur Regionswahl</button>
             </div>
           </div>
         </div>
@@ -732,10 +831,10 @@ export default function KingdomWorld() {
               <input type="number" value={raidMin} min={5} onChange={(e) => setRaidMin(Number(e.target.value))} style={inputStyle} />
               <input type="number" value={raidMax} min={5} onChange={(e) => setRaidMax(Number(e.target.value))} style={inputStyle} />
             </div>
-            <button onClick={() => setRaidTimer(1)} style={{ ...menuBtnStyle, marginBottom: "8px" }}>Angriff jetzt auslösen</button>
+            <button className="kw-btn" onClick={() => setRaidTimer(1)} style={{ ...menuBtnStyle, marginBottom: "8px" }}>Angriff jetzt auslösen</button>
 
             <div style={{ fontSize: "12px", color: "#1F3B2C", margin: "14px 0 4px", fontWeight: 700 }}>Welt</div>
-            <button onClick={restartGame} style={{ ...menuBtnStyle, marginBottom: "12px" }}>🎲 Neue Zufallswelt generieren</button>
+            <button className="kw-btn" onClick={restartGame} style={{ ...menuBtnStyle, marginBottom: "12px" }}>🎲 Neue Zufallswelt generieren</button>
 
             <div style={{ fontSize: "12px", color: "#1F3B2C", margin: "4px 0 4px", fontWeight: 700 }}>Ressourcen setzen</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginBottom: "10px" }}>
@@ -748,7 +847,7 @@ export default function KingdomWorld() {
             <div style={{ fontSize: "12px", color: "#1F3B2C", marginBottom: "4px", fontWeight: 700 }}>Bonus-Bewohner</div>
             <input type="number" value={devPopBonus} onChange={(e) => setDevPopBonus(Number(e.target.value))} style={{ ...inputStyle, marginBottom: "12px" }} />
 
-            <button onClick={() => setShowDevPanel(false)} style={menuBtnStyle}>Schließen</button>
+            <button className="kw-btn" onClick={() => setShowDevPanel(false)} style={menuBtnStyle}>Schließen</button>
           </div>
         </div>
       )}
@@ -784,7 +883,7 @@ export default function KingdomWorld() {
                 </>
               );
             })()}
-            <button onClick={() => setSelectedInfo(null)} style={{ ...menuBtnStyle, marginTop: "14px" }}>Schließen</button>
+            <button className="kw-btn" onClick={() => setSelectedInfo(null)} style={{ ...menuBtnStyle, marginTop: "14px" }}>Schließen</button>
           </div>
         </div>
       )}
