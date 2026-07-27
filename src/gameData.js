@@ -51,12 +51,45 @@ export const SAVE_KEY = "kingdom-world-save-v1";
 // Regions (visual theme only)
 // ---------------------------------------------------------------------------
 
+// Each region is a loose historical civilization with one small, clearly
+// telegraphed bonus (shown on the spawn screen) so the choice matters beyond
+// the map color theme, without adding new systems to keep track of.
 export const REGIONS = {
-  europa: { name: "Europa", palette: { grass: "#7CAD5C", wald: ["#3F6B3A", "#4B7A44"], fels: ["#8C8375", "#9A9186"], wasser: ["#3E82B8", "#4C93C9"], gold: "#D8A94E", mine: ["#6B6459", "#7A7266"] } },
-  aegypten: { name: "Ägypten", palette: { grass: "#D8C384", wald: ["#8C7A3F", "#9C8A4A"], fels: ["#B59A6A", "#C4A876"], wasser: ["#4C93C9", "#5AA3D6"], gold: "#E8C468", mine: ["#8A7A55", "#977F63"] } },
-  peking: { name: "Ostasien", palette: { grass: "#8FB86B", wald: ["#3A6B3A", "#488048"], fels: ["#8C8375", "#9A9186"], wasser: ["#3E82B8", "#4C93C9"], gold: "#D8A94E", mine: ["#6B6459", "#7A7266"] } },
-  groenland: { name: "Grönland", palette: { grass: "#D7E6E2", wald: ["#5C8A80", "#6C9A90"], fels: ["#A9B8B6", "#B8C6C4"], wasser: ["#6BAAD6", "#7ABAE6"], gold: "#E8D9A0", mine: ["#9AAAA6", "#A8B6B2"] } },
-  sibirien: { name: "Sibirien", palette: { grass: "#CFE0D8", wald: ["#3F5C4A", "#4B6C56"], fels: ["#8C9A96", "#9AA8A4"], wasser: ["#5C93B8", "#6AA3C8"], gold: "#D8C888", mine: ["#7A8A84", "#889892"] } },
+  europa: {
+    name: "Europa", bonusLabel: "Ausgeglichenes Volk – keine Boni oder Nachteile.",
+    bonus: {},
+    palette: { grass: "#7CAD5C", wald: ["#3F6B3A", "#4B7A44"], fels: ["#8C8375", "#9A9186"], wasser: ["#3E82B8", "#4C93C9"], gold: "#D8A94E", mine: ["#6B6459", "#7A7266"] },
+  },
+  aegypten: {
+    name: "Ägypten", bonusLabel: "Handelsvolk – +50% Gold auf dem Markt.",
+    bonus: { marketGoldMult: 1.5 },
+    palette: { grass: "#D8C384", wald: ["#8C7A3F", "#9C8A4A"], fels: ["#B59A6A", "#C4A876"], wasser: ["#4C93C9", "#5AA3D6"], gold: "#E8C468", mine: ["#8A7A55", "#977F63"] },
+  },
+  peking: {
+    name: "Ostasien", bonusLabel: "Steinbaumeister – +50% Steinproduktion.",
+    bonus: { produceMult: { stein: 1.5 } },
+    palette: { grass: "#8FB86B", wald: ["#3A6B3A", "#488048"], fels: ["#8C8375", "#9A9186"], wasser: ["#3E82B8", "#4C93C9"], gold: "#D8A94E", mine: ["#6B6459", "#7A7266"] },
+  },
+  groenland: {
+    name: "Grönland", bonusLabel: "Nordische Siedler – +30% Nahrungsproduktion.",
+    bonus: { produceMult: { nahrung: 1.3 } },
+    palette: { grass: "#D7E6E2", wald: ["#5C8A80", "#6C9A90"], fels: ["#A9B8B6", "#B8C6C4"], wasser: ["#6BAAD6", "#7ABAE6"], gold: "#E8D9A0", mine: ["#9AAAA6", "#A8B6B2"] },
+  },
+  sibirien: {
+    name: "Sibirien", bonusLabel: "Raue Krieger – +30% Truppennachschub.",
+    bonus: { troopGrowthMult: 1.3 },
+    palette: { grass: "#CFE0D8", wald: ["#3F5C4A", "#4B6C56"], fels: ["#8C9A96", "#9AA8A4"], wasser: ["#5C93B8", "#6AA3C8"], gold: "#D8C888", mine: ["#7A8A84", "#889892"] },
+  },
+  rom: {
+    name: "Römisches Reich", bonusLabel: "Legionäre & Kastelle – Angriffsschaden -30%.",
+    bonus: { raidDamageMult: 0.7 },
+    palette: { grass: "#C9B872", wald: ["#6B7A3F", "#7A8A4A"], fels: ["#B8A888", "#C6B896"], wasser: ["#4C93C9", "#5AA3D6"], gold: "#E8C468", mine: ["#8C7F63", "#9A8D70"] },
+  },
+  japan: {
+    name: "Shogunat", bonusLabel: "Ninja & Samurai – Flusssuche +40% Gold, +15% Erfolgschance.",
+    bonus: { searchGoldMult: 1.4, searchSuccessBonus: 0.15 },
+    palette: { grass: "#9FBF8A", wald: ["#3A5C3A", "#486C48"], fels: ["#8C8375", "#9A9186"], wasser: ["#4C93C9", "#5AA3D6"], gold: "#D8A94E", mine: ["#6B6459", "#7A7266"] },
+  },
 };
 
 // ---------------------------------------------------------------------------

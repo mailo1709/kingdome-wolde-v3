@@ -57,10 +57,13 @@ function SpawnScreen({ onPick, savedGame, onContinue }) {
           </>
         )}
         <div style={{ fontFamily: "Cinzel, serif", fontSize: "22px", fontWeight: 700, color: "#1F3B2C", marginBottom: "8px" }}>Wähle deinen Startort</div>
-        <div style={{ fontSize: "12.5px", color: "#5C6B5A", marginBottom: "18px" }}>Vereinfachte Vorschau: die Region ändert aktuell nur das Farbthema deiner Karte.</div>
+        <div style={{ fontSize: "12.5px", color: "#5C6B5A", marginBottom: "18px" }}>Jede Kultur bringt einen eigenen kleinen Bonus mit.</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
           {Object.entries(REGIONS).map(([key, r]) => (
-            <button key={key} className="kw-btn" onClick={() => onPick(key)} style={{ padding: "14px 8px", borderRadius: "10px", border: "none", background: r.palette.grass, color: "#1F3B2C", fontWeight: 700, fontSize: "13px", cursor: "pointer" }}>{r.name}</button>
+            <button key={key} className="kw-btn" title={r.bonusLabel} onClick={() => onPick(key)} style={{ padding: "12px 8px", borderRadius: "10px", border: "none", background: r.palette.grass, color: "#1F3B2C", cursor: "pointer", display: "flex", flexDirection: "column", gap: "3px" }}>
+              <span style={{ fontWeight: 700, fontSize: "13px" }}>{r.name}</span>
+              <span style={{ fontSize: "9.5px", fontWeight: 500, lineHeight: 1.3, opacity: 0.85 }}>{r.bonusLabel}</span>
+            </button>
           ))}
           <button className="kw-btn" onClick={() => onPick(Object.keys(REGIONS)[Math.floor(Math.random() * Object.keys(REGIONS).length)])}
             style={{ gridColumn: "1 / -1", padding: "12px", borderRadius: "10px", border: "2px dashed #1F3B2C", background: "transparent", color: "#1F3B2C", fontWeight: 700, fontSize: "13px", cursor: "pointer" }}>🎲 Zufällig</button>
@@ -162,6 +165,7 @@ export default function KingdomWorld() {
   const cap = BASE_CAP + lagerCount * 100;
   const maxTroops = 1 + kaserneCount;
   const raidWarning = raidTimer <= 10 && !raidsPaused;
+  const regionBonus = REGIONS[region]?.bonus || {};
 
   const flash = useCallback((text) => {
     setMessage(text);
@@ -277,15 +281,16 @@ export default function KingdomWorld() {
             if (def?.produces) Object.entries(def.produces).forEach(([k, v]) => (gain[k] = (gain[k] || 0) + v));
           });
           let next = { ...prev };
-          Object.entries(gain).forEach(([k, v]) => (next[k] = (next[k] || 0) + v));
-          for (let i = 0; i < marktCount; i++) if (next.nahrung >= 8) { next.nahrung -= 8; next.gold += 10; anyMarketTrade = true; }
+          Object.entries(gain).forEach(([k, v]) => (next[k] = (next[k] || 0) + v * (regionBonus.produceMult?.[k] ?? 1)));
+          for (let i = 0; i < marktCount; i++) if (next.nahrung >= 8) { next.nahrung -= 8; next.gold += 10 * (regionBonus.marketGoldMult ?? 1); anyMarketTrade = true; }
           return clampCap(next, cap);
         });
         if (anyMarketTrade) setMarketPulse((p) => p + 1);
       }
 
       if (t % TROOP_GROWTH_INTERVAL_TICKS === 0 && kaserneCount > 0) {
-        setTroopPool((p) => Math.min(p + kaserneCount, kaserneCount * TROOP_CAP_PER_KASERNE));
+        const growth = Math.round(kaserneCount * (regionBonus.troopGrowthMult ?? 1));
+        setTroopPool((p) => Math.min(p + growth, kaserneCount * TROOP_CAP_PER_KASERNE));
       }
 
       setExpeditions((prev) => prev.map((e) => ({ ...e, remaining: e.remaining - 1 })).filter((e) => {
@@ -350,7 +355,7 @@ export default function KingdomWorld() {
           if (prev > 1) return prev - 1;
           const garrisonedTotal = Object.values(gameStateRef.current?.garrisons || {}).reduce((a, b) => a + b, 0);
           const baseDamage = Math.max(10, 45 - mauerCount * 6);
-          const damage = Math.max(0, baseDamage - garrisonedTotal * 4);
+          const damage = Math.round(Math.max(0, baseDamage - garrisonedTotal * 4) * (regionBonus.raidDamageMult ?? 1));
           const cur = resourcesRef.current;
           let remaining = damage;
           const next = { ...cur };
@@ -407,11 +412,11 @@ export default function KingdomWorld() {
 
     if (nodeKey) {
       const def = NODE_DEFS[nodeKey];
-      if (expeditions.some((e) => e.key === nodeKey)) { flash("Dort ist schon ein Trupp unterwegs."); return; }
+      if (expeditions.some((e) => e.tileIndex === index)) { flash("Dort ist schon ein Trupp unterwegs."); return; }
       if (expeditions.length >= maxTroops) { flash(`Alle Trupps im Einsatz (max. ${maxTroops}). Baue eine Kaserne für mehr.`); return; }
       if (!canAfford(resources, def.cost)) { flash("Nicht genug Nahrung für den Trupp."); return; }
       setResources((r) => pay(r, def.cost));
-      setExpeditions((prev) => [...prev, { key: nodeKey, remaining: def.time, total: def.time }]);
+      setExpeditions((prev) => [...prev, { key: nodeKey, tileIndex: index, remaining: def.time, total: def.time }]);
       flash(`Trupp unterwegs zu "${def.name}" …`);
       return;
     }
@@ -428,8 +433,8 @@ export default function KingdomWorld() {
       const last = searchCooldownRef.current[index] || -999;
       if (tickRef.current - last < 8) { flash("Warte kurz, bevor du hier wieder suchst."); return; }
       searchCooldownRef.current[index] = tickRef.current;
-      if (Math.random() < 0.6) {
-        const gain = 5 + Math.floor(Math.random() * 11);
+      if (Math.random() < 0.6 + (regionBonus.searchSuccessBonus ?? 0)) {
+        const gain = Math.round((5 + Math.floor(Math.random() * 11)) * (regionBonus.searchGoldMult ?? 1));
         setResources((r) => clampCap({ ...r, gold: r.gold + gain }, cap));
         flash(`Im Fluss gefunden: +${gain} Gold`);
       } else flash("Nichts gefunden diesmal.");
@@ -563,7 +568,7 @@ export default function KingdomWorld() {
 
       <div style={{ width: "100%", maxWidth: "780px", display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-          <div style={{ fontFamily: "Cinzel, serif", fontSize: "19px", fontWeight: 700, color: "#1F3B2C" }}>Reich · {REGIONS[region].name}</div>
+          <div title={REGIONS[region].bonusLabel} style={{ fontFamily: "Cinzel, serif", fontSize: "19px", fontWeight: 700, color: "#1F3B2C" }}>Reich · {REGIONS[region].name}</div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <div title="Bevölkerung" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#1F3B2C", fontWeight: 600 }}>
               <Users size={13} /> {population}
@@ -597,7 +602,7 @@ export default function KingdomWorld() {
             {expeditions.map((e) => {
               const def = NODE_DEFS[e.key];
               return (
-                <div key={e.key} style={{ background: "rgba(255,255,255,0.55)", borderRadius: "8px", padding: "6px 10px" }}>
+                <div key={e.tileIndex} style={{ background: "rgba(255,255,255,0.55)", borderRadius: "8px", padding: "6px 10px" }}>
                   <div style={{ fontSize: "11px", fontWeight: 600, color: "#1F3B2C", marginBottom: "3px" }}>Trupp: {def.name} · noch {e.remaining}s</div>
                   <ProgressBar pct={100 - (e.remaining / e.total) * 100} color="#3A6B3E" />
                 </div>
