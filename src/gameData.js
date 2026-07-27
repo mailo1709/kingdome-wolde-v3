@@ -42,7 +42,12 @@ export const ZONE_UNLOCK_COST = {
 // feel broken rather than just slow.
 export const ZONE_DEFENSE = { 1: 15, 2: 28 };
 
-export const FIRST_RAID_DELAY = 150;
+// Slow, tense start: plenty of time to build up before the first raid,
+// then attacks return on a wide random interval so there are real lulls
+// ("Friedenszeiten") between fights, not just a steady drumbeat.
+export const FIRST_RAID_DELAY = 360;
+export const DEFAULT_RAID_MIN = 60;
+export const DEFAULT_RAID_MAX = 150;
 export const TROOP_CAP_PER_KASERNE = 8;
 export const TROOP_GROWTH_INTERVAL_TICKS = 15;
 export const SAVE_KEY = "kingdom-world-save-v1";
@@ -145,7 +150,7 @@ export const TUTORIAL_STEPS = [
   "Willkommen in deinem neuen Reich! Das braune Feld in der Mitte ist dein Rathaus.",
   "Wähle unten ein Gebäude aus und tippe auf ein freies Feld deiner Landfarbe, um es zu bauen.",
   "Tippe direkt auf einen Baum, um Holz zu bekommen – oder auf Wald/Fels/Gold-Symbole, um einen Trupp loszuschicken.",
-  "Im Fluss kannst du nach Gold suchen, und mit einer Brücke drüber bauen. Achtung: Feinde greifen irgendwann an – Mauern und Wachposten schützen dich! Mit Escape kommst du jederzeit ins Menü.",
+  "Im Fluss kannst du nach Gold suchen, und mit einer Brücke drüber bauen. Achtung: Nach einer ruhigen Anfangszeit greifen Feinde in unregelmäßigen Abständen an – Mauern und Wachposten schützen dich! Brauchst du mal eine Pause zum Bauen, schalte den Friedensmodus in den Einstellungen ein. Mit Escape kommst du jederzeit ins Menü.",
   "Die Karte hat weitere, zunächst gesperrte Gebiete mit feindlichen Dörfern. Baue eine Kaserne, warte auf Truppen, und besiege das Dorf, um das Gebiet freizuschalten. Stationiere Truppen an einem Wachposten, um Angriffe abzuwehren.",
 ];
 

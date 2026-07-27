@@ -8,6 +8,7 @@ import {
   idx, clamp, zoneIndexOfTile,
   REGIONS, BUILDING_TYPES, TOOLS, RESOURCE_META, JOB_META, NODE_DEFS, CRAFTS,
   TUTORIAL_STEPS, START_RESOURCES, BASE_CAP, GLOBAL_STYLES, SAVE_KEY, FIRST_RAID_DELAY,
+  DEFAULT_RAID_MIN, DEFAULT_RAID_MAX,
   TROOP_CAP_PER_KASERNE, TROOP_GROWTH_INTERVAL_TICKS,
   ZONE_META, ZONE_UNLOCK_COST,
   generateMap, getTileBg, canAfford, pay, clampCap,
@@ -128,8 +129,8 @@ export default function KingdomWorld() {
   const [showDevPanel, setShowDevPanel] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [raidsPaused, setRaidsPaused] = useState(false);
-  const [raidMin, setRaidMin] = useState(50);
-  const [raidMax, setRaidMax] = useState(80);
+  const [raidMin, setRaidMin] = useState(DEFAULT_RAID_MIN);
+  const [raidMax, setRaidMax] = useState(DEFAULT_RAID_MAX);
   const [raidLog, setRaidLog] = useState([]);
   const [devPopBonus, setDevPopBonus] = useState(0);
   const [selectedInfo, setSelectedInfo] = useState(null);
@@ -246,7 +247,7 @@ export default function KingdomWorld() {
   useEffect(() => {
     if (!region) { setRaidEnemies([]); return; }
     if (raidWarning) {
-      setRaidEnemies((prev) => prev.length ? prev : Array.from({ length: 2 + Math.floor(Math.random() * 3) }, (_, i) => ({
+      setRaidEnemies((prev) => prev.length ? prev : Array.from({ length: 3 + Math.floor(Math.random() * 4) }, (_, i) => ({
         id: i,
         sx: Math.random() < 0.5 ? 1 + Math.random() * 3 : 96 + Math.random() * 3,
         sy: 3 + Math.random() * 88,
@@ -354,8 +355,8 @@ export default function KingdomWorld() {
         setRaidTimer((prev) => {
           if (prev > 1) return prev - 1;
           const garrisonedTotal = Object.values(gameStateRef.current?.garrisons || {}).reduce((a, b) => a + b, 0);
-          const baseDamage = Math.max(10, 45 - mauerCount * 6);
-          const damage = Math.round(Math.max(0, baseDamage - garrisonedTotal * 4) * (regionBonus.raidDamageMult ?? 1));
+          const baseDamage = Math.max(15, 70 - mauerCount * 8);
+          const damage = Math.round(Math.max(0, baseDamage - garrisonedTotal * 5) * (regionBonus.raidDamageMult ?? 1));
           const cur = resourcesRef.current;
           let remaining = damage;
           const next = { ...cur };
@@ -528,8 +529,8 @@ export default function KingdomWorld() {
     setExpeditions(saved.expeditions || []);
     setRaidTimer(saved.raidTimer ?? FIRST_RAID_DELAY);
     setRaidLog(saved.raidLog || []);
-    setRaidMin(saved.raidMin ?? 50);
-    setRaidMax(saved.raidMax ?? 80);
+    setRaidMin(saved.raidMin ?? DEFAULT_RAID_MIN);
+    setRaidMax(saved.raidMax ?? DEFAULT_RAID_MAX);
     setRaidsPaused(saved.raidsPaused || false);
     setDevPopBonus(saved.devPopBonus || 0);
     setTutorialStep(null);
@@ -878,6 +879,10 @@ export default function KingdomWorld() {
             <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#1F3B2C", marginBottom: "14px", cursor: "pointer" }}>
               <input type="checkbox" checked={reduceMotion} onChange={(e) => setReduceMotion(e.target.checked)} /> Reduzierte Bewegung (Animationen aus)
             </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#1F3B2C", marginBottom: "6px", cursor: "pointer" }}>
+              <input type="checkbox" checked={raidsPaused} onChange={(e) => setRaidsPaused(e.target.checked)} /> Friedensmodus (keine Angriffe)
+            </label>
+            <div style={{ fontSize: "11px", color: "#5C6B5A", marginBottom: "14px", lineHeight: 1.4 }}>Schalte Angriffe jederzeit selbst ab, wenn du in Ruhe bauen willst.</div>
             <button className="kw-btn" onClick={() => setShowSettings(false)} style={menuBtnStyle}>Schließen</button>
           </div>
         </div>
