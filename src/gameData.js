@@ -35,9 +35,16 @@ export const ZONE_UNLOCK_COST = {
   1: { gold: 250, holz: 120, stein: 80 },
   2: { gold: 500, holz: 250, stein: 180 },
 };
-export const ZONE_DEFENSE = { 1: 20, 2: 35 };
+// Tuned so a single Kaserne (troop cap TROOP_CAP_PER_KASERNE) is close to
+// viable for the tier-1 zone, and ~4 Kasernen comfortably clears tier 2 —
+// the original 5/20 split made tier 1 mathematically unreachable below 4
+// Kasernen (cap 5*N always < 20), which made the whole conquest mechanic
+// feel broken rather than just slow.
+export const ZONE_DEFENSE = { 1: 15, 2: 28 };
 
 export const FIRST_RAID_DELAY = 150;
+export const TROOP_CAP_PER_KASERNE = 8;
+export const TROOP_GROWTH_INTERVAL_TICKS = 15;
 export const SAVE_KEY = "kingdom-world-save-v1";
 
 // ---------------------------------------------------------------------------

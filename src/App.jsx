@@ -8,6 +8,7 @@ import {
   idx, clamp, zoneIndexOfTile,
   REGIONS, BUILDING_TYPES, TOOLS, RESOURCE_META, JOB_META, NODE_DEFS, CRAFTS,
   TUTORIAL_STEPS, START_RESOURCES, BASE_CAP, GLOBAL_STYLES, SAVE_KEY, FIRST_RAID_DELAY,
+  TROOP_CAP_PER_KASERNE, TROOP_GROWTH_INTERVAL_TICKS,
   ZONE_META, ZONE_UNLOCK_COST,
   generateMap, getTileBg, canAfford, pay, clampCap,
 } from "./gameData";
@@ -283,8 +284,8 @@ export default function KingdomWorld() {
         if (anyMarketTrade) setMarketPulse((p) => p + 1);
       }
 
-      if (t % 20 === 0 && kaserneCount > 0) {
-        setTroopPool((p) => Math.min(p + kaserneCount, kaserneCount * 5));
+      if (t % TROOP_GROWTH_INTERVAL_TICKS === 0 && kaserneCount > 0) {
+        setTroopPool((p) => Math.min(p + kaserneCount, kaserneCount * TROOP_CAP_PER_KASERNE));
       }
 
       setExpeditions((prev) => prev.map((e) => ({ ...e, remaining: e.remaining - 1 })).filter((e) => {
@@ -461,7 +462,7 @@ export default function KingdomWorld() {
 
   function assignGarrison(tileIndex, delta) {
     const current = garrisons[tileIndex] || 0;
-    if (delta > 0 && troopPool <= 0) return;
+    if (delta > 0 && troopPool <= 0) { flash("Keine Truppen im Reservepool. Baue eine Kaserne und warte, bis welche bereitstehen."); return; }
     if (delta < 0 && current <= 0) return;
     setGarrisons((g) => ({ ...g, [tileIndex]: current + delta }));
     setTroopPool((p) => p - delta);
