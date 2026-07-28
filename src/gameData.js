@@ -233,16 +233,35 @@ export function generateMap() {
   return { terrain, nodes, npcVillages };
 }
 
+// Layered gradients instead of flat fills: a couple of tiny speck/grain
+// layers on top of the base tone read as "textured ground" at tile scale
+// without needing real art assets.
 export function getTileBg(region, type) {
   const p = REGIONS[region].palette;
-  if (type === "grass") return p.grass;
-  if (type === "gold") return p.gold;
-  if (type === "wald") return `repeating-linear-gradient(135deg, ${p.wald[0]}, ${p.wald[0]} 5px, ${p.wald[1]} 5px, ${p.wald[1]} 10px)`;
-  if (type === "fels") return `repeating-linear-gradient(135deg, ${p.fels[0]}, ${p.fels[0]} 5px, ${p.fels[1]} 5px, ${p.fels[1]} 10px)`;
-  if (type === "wasser") return `repeating-linear-gradient(120deg, ${p.wasser[0]}, ${p.wasser[0]} 6px, ${p.wasser[1]} 6px, ${p.wasser[1]} 12px)`;
-  if (type === "mine") return `repeating-linear-gradient(135deg, ${p.mine[0]}, ${p.mine[0]} 5px, ${p.mine[1]} 5px, ${p.mine[1]} 10px)`;
+  if (type === "grass") {
+    return `radial-gradient(circle at 22% 28%, rgba(255,255,255,0.12) 0.5px, transparent 1.3px) 0 0/7px 7px, radial-gradient(circle at 68% 72%, rgba(0,0,0,0.08) 0.5px, transparent 1.3px) 0 0/9px 9px, ${p.grass}`;
+  }
+  if (type === "gold") {
+    return `radial-gradient(circle at 30% 35%, rgba(255,255,255,0.4) 0.5px, transparent 1.4px) 0 0/6px 6px, radial-gradient(circle at 68% 62%, rgba(255,255,255,0.25) 0.5px, transparent 1.2px) 0 0/8px 8px, ${p.gold}`;
+  }
+  if (type === "wald") {
+    return `radial-gradient(circle at 32% 30%, rgba(255,255,255,0.12) 0.6px, transparent 1.3px) 0 0/6px 6px, repeating-linear-gradient(135deg, ${p.wald[0]}, ${p.wald[0]} 5px, ${p.wald[1]} 5px, ${p.wald[1]} 10px)`;
+  }
+  if (type === "fels") {
+    return `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.16) 0.6px, transparent 1.4px) 0 0/7px 7px, repeating-linear-gradient(135deg, ${p.fels[0]}, ${p.fels[0]} 5px, ${p.fels[1]} 5px, ${p.fels[1]} 10px)`;
+  }
+  if (type === "wasser") {
+    return `repeating-linear-gradient(120deg, ${p.wasser[0]}, ${p.wasser[0]} 6px, ${p.wasser[1]} 6px, ${p.wasser[1]} 12px)`;
+  }
+  if (type === "mine") {
+    return `radial-gradient(circle at 40% 35%, rgba(232,196,104,0.22) 0.6px, transparent 1.4px) 0 0/8px 8px, repeating-linear-gradient(135deg, ${p.mine[0]}, ${p.mine[0]} 5px, ${p.mine[1]} 5px, ${p.mine[1]} 10px)`;
+  }
   return p.grass;
 }
+
+// Buildings that feel "alive" get a small looping activity puff (forge
+// smoke, hearth smoke, work dust) purely via CSS pseudo-elements.
+export const SMOKE_BUILDINGS = new Set(["holzfaeller", "steinbruch", "bauernhof", "schmiede", "haus"]);
 
 // ---------------------------------------------------------------------------
 // Small pure helpers
@@ -269,7 +288,40 @@ export const GLOBAL_STYLES = `
   0%, 100% { filter: brightness(1); }
   50% { filter: brightness(1.08); }
 }
-.tile-water { animation: waterShimmer 3.5s ease-in-out infinite; }
+.tile-water { animation: waterShimmer 3.5s ease-in-out infinite; position: relative; overflow: hidden; }
+
+@keyframes waterGlint {
+  0% { transform: translateX(-120%) translateY(-120%); opacity: 0; }
+  35%, 55% { opacity: 0.5; }
+  100% { transform: translateX(120%) translateY(120%); opacity: 0; }
+}
+.tile-water::after {
+  content: ""; position: absolute; inset: -50%;
+  background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.55) 50%, transparent 60%);
+  animation: waterGlint 5.5s ease-in-out infinite; pointer-events: none;
+}
+
+@keyframes windSway {
+  0%, 100% { transform: rotate(-0.8deg); }
+  50% { transform: rotate(0.8deg); }
+}
+.tile-wald { animation: windSway 6s ease-in-out infinite; transform-origin: 50% 85%; }
+.tile-wald:nth-child(3n) { animation-duration: 7.2s; animation-delay: -1.4s; }
+.tile-wald:nth-child(5n) { animation-duration: 5.4s; animation-delay: -2.6s; }
+.tile-wald:nth-child(7n) { animation-duration: 8s; animation-delay: -3.8s; }
+
+@keyframes smokePuff {
+  0% { transform: translate(-50%, 0) scale(0.5); opacity: 0; }
+  20% { opacity: 0.5; }
+  100% { transform: translate(-50%, -13px) scale(1.3); opacity: 0; }
+}
+.kw-smoke { position: relative; }
+.kw-smoke::before, .kw-smoke::after {
+  content: ""; position: absolute; left: 50%; top: -1px; width: 4px; height: 4px; border-radius: 50%;
+  background: rgba(255,255,255,0.55); pointer-events: none;
+  animation: smokePuff 3.2s ease-out infinite;
+}
+.kw-smoke::after { animation-delay: 1.6s; width: 3px; height: 3px; }
 
 @keyframes dotBob {
   0%, 100% { transform: translateY(0); }
@@ -278,9 +330,20 @@ export const GLOBAL_STYLES = `
 .dot-bob { animation: dotBob 1.6s ease-in-out infinite; }
 
 .reduce-motion .tile-water,
+.reduce-motion .tile-water::after,
+.reduce-motion .tile-wald,
+.reduce-motion .kw-smoke::before,
+.reduce-motion .kw-smoke::after,
 .reduce-motion .dot-bob,
 .reduce-motion .market-pulse {
   animation: none !important;
+}
+
+.kw-tile { box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), inset 0 -1px 0 rgba(0,0,0,0.08); }
+
+.kw-map-vignette {
+  position: absolute; inset: 0; pointer-events: none;
+  box-shadow: inset 0 0 60px 18px rgba(10,20,14,0.35);
 }
 
 .kw-btn { transition: transform 0.12s ease, filter 0.12s ease; }

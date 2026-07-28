@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(curl -s -o /dev/null -w * http://localhost:*)",
-      "Bash(curl -s http://localhost:*)"
+      "Bash(curl -s http://localhost:*)",
+      "Bash(grep -n \"kw-map-vignette\\\\|onPointerDown={onPointerDown}\\\\|transform: effects3D\\\\|position: \\\\\"absolute\\\\\", bottom: \\\\\"8px\\\\\", right: \\\\\"8px\\\\\"\" src/App.jsx)"
     ]
   }
 }

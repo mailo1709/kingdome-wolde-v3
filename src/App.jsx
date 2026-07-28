@@ -10,7 +10,7 @@ import {
   TUTORIAL_STEPS, START_RESOURCES, BASE_CAP, GLOBAL_STYLES, SAVE_KEY, FIRST_RAID_DELAY,
   DEFAULT_RAID_MIN, DEFAULT_RAID_MAX,
   TROOP_CAP_PER_KASERNE, TROOP_GROWTH_INTERVAL_TICKS,
-  ZONE_META, ZONE_UNLOCK_COST,
+  ZONE_META, ZONE_UNLOCK_COST, SMOKE_BUILDINGS,
   generateMap, getTileBg, canAfford, pay, clampCap,
 } from "./gameData";
 
@@ -660,16 +660,20 @@ export default function KingdomWorld() {
                       const zoneId = zoneIndexOfTile(i);
                       const locked = !zonesUnlocked[zoneId];
                       const isVillageTile = locked && villageTileMap[i] === zoneId;
+                      const isSmoking = building && SMOKE_BUILDINGS.has(building);
                       const tileClass = [
                         "kw-tile",
                         t === "wasser" && !building ? "tile-water" : "",
+                        t === "wald" && !building ? "tile-wald" : "",
                         (bDef || isTownhall) ? (effects3D ? "kw-building-3d" : "kw-building") : "",
                         isTownhall ? "kw-townhall" : "",
+                        isSmoking ? "kw-smoke" : "",
                       ].filter(Boolean).join(" ");
+                      const buildingBg = "linear-gradient(160deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 40%, rgba(0,0,0,0.22) 100%)";
                       return (
                         <div key={i} onClick={() => handleTileClick(i)} title={locked ? "Gesperrtes Gebiet – anklicken zum Erobern" : isTownhall ? "Rathaus" : bDef?.name || nDef?.name || t}
                           className={tileClass}
-                          style={{ width: TILE, height: TILE, position: "relative", background: bDef ? bDef.color : isTownhall ? "#8C5A2B" : getTileBg(region, t), border: "1px solid rgba(0,0,0,0.06)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                          style={{ width: TILE, height: TILE, position: "relative", background: bDef ? `${buildingBg}, ${bDef.color}` : isTownhall ? `${buildingBg}, #8C5A2B` : getTileBg(region, t), border: "1px solid rgba(0,0,0,0.06)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                           {isTownhall && <Landmark size={15} color="#F3F7EE" />}
                           {bDef && <bDef.icon size={14} color="#F3F7EE" />}
                           {isVillageTile && !building && <Flag size={13} color="#C24A4A" style={{ filter: "drop-shadow(0 0 2px rgba(0,0,0,0.6))" }} />}
@@ -712,6 +716,7 @@ export default function KingdomWorld() {
                     );
                   })}
                 </div>
+                <div className="kw-map-vignette" />
                 <div style={{ position: "absolute", bottom: "8px", right: "8px", display: "flex", flexDirection: "column", gap: "5px" }}>
                   <button className="kw-btn" onClick={() => setZoom((z) => Math.min(2.2, z + 0.2))} style={zoomBtnStyle}><ZoomIn size={14} /></button>
                   <button className="kw-btn" onClick={() => setZoom((z) => Math.max(0.5, z - 0.2))} style={zoomBtnStyle}><ZoomOut size={14} /></button>
