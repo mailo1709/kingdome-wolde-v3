@@ -1,3 +1,10 @@
-body {
+html, body {
   margin: 0;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+#root {
+  overscroll-behavior: none;
 }

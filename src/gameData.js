@@ -21,6 +21,30 @@ export const idx = (r, c) => r * COLS + c;
 export const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 export const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
+// ---------------------------------------------------------------------------
+// Isometric (2:1) projection helpers — pure math, no assets. Row/col stay the
+// source of truth for all game logic; these only convert to screen pixels.
+// ---------------------------------------------------------------------------
+
+export const ISO_W = TILE * 2;
+export const ISO_H = TILE;
+export const ISO_CLIP = "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)";
+const ISO_OFFSET_X = (ROWS - 1) * (ISO_W / 2);
+export const ISO_MAP_WIDTH = (COLS + ROWS - 1) * (ISO_W / 2) + ISO_W;
+export const ISO_MAP_HEIGHT = (COLS + ROWS - 1) * (ISO_H / 2) + ISO_H;
+
+// r,c may be fractional (used for entity dots moving between tiles).
+export function isoX(r, c) { return (c - r) * (ISO_W / 2) + ISO_OFFSET_X; }
+export function isoY(r, c) { return (c + r) * (ISO_H / 2); }
+
+// Inverse of isoX/isoY: screen-space point (in the same unscaled/unpanned
+// pixel space isoX/isoY produce) back to fractional row/col.
+export function isoToRC(x, y) {
+  const cMinusR = (x - ISO_OFFSET_X) / (ISO_W / 2);
+  const cPlusR = y / (ISO_H / 2);
+  return { r: (cPlusR - cMinusR) / 2, c: (cPlusR + cMinusR) / 2 };
+}
+
 export const zoneIndexOf = (r, c) => Math.floor(r / ZONE_ROWS) * ZONE_GRID_COLS + Math.floor(c / ZONE_COLS);
 export const zoneIndexOfTile = (index) => zoneIndexOf(Math.floor(index / COLS), index % COLS);
 
@@ -233,28 +257,34 @@ export function generateMap() {
   return { terrain, nodes, npcVillages };
 }
 
-// Layered gradients instead of flat fills: a couple of tiny speck/grain
-// layers on top of the base tone read as "textured ground" at tile scale
-// without needing real art assets.
+// Hard-edged 2x2 checker (via conic-gradient) instead of blurred radial
+// specks: reads as pixel-dithered "block game" noise rather than a soft
+// painterly grain, at the same tiny tile scale.
+function checker(light, dark, size) {
+  return `conic-gradient(${light} 90deg, ${dark} 0 180deg, ${light} 0 270deg, ${dark} 0) 0 0/${size}px ${size}px`;
+}
+
 export function getTileBg(region, type) {
   const p = REGIONS[region].palette;
   if (type === "grass") {
-    return `radial-gradient(circle at 22% 28%, rgba(255,255,255,0.12) 0.5px, transparent 1.3px) 0 0/7px 7px, radial-gradient(circle at 68% 72%, rgba(0,0,0,0.08) 0.5px, transparent 1.3px) 0 0/9px 9px, ${p.grass}`;
+    return `${checker("rgba(255,255,255,0.08)", "rgba(0,0,0,0.08)", 6)}, ${p.grass}`;
   }
   if (type === "gold") {
-    return `radial-gradient(circle at 30% 35%, rgba(255,255,255,0.4) 0.5px, transparent 1.4px) 0 0/6px 6px, radial-gradient(circle at 68% 62%, rgba(255,255,255,0.25) 0.5px, transparent 1.2px) 0 0/8px 8px, ${p.gold}`;
+    return `${checker("rgba(255,255,255,0.32)", "rgba(255,255,255,0.12)", 5)}, ${p.gold}`;
   }
   if (type === "wald") {
-    return `radial-gradient(circle at 32% 30%, rgba(255,255,255,0.12) 0.6px, transparent 1.3px) 0 0/6px 6px, repeating-linear-gradient(135deg, ${p.wald[0]}, ${p.wald[0]} 5px, ${p.wald[1]} 5px, ${p.wald[1]} 10px)`;
+    // The tree itself is now a raised voxel canopy (see cubeFaces); this is
+    // just the shaded forest-floor patch underneath it.
+    return `linear-gradient(rgba(0,0,0,0.32), rgba(0,0,0,0.32)), ${checker("rgba(255,255,255,0.05)", "rgba(0,0,0,0.12)", 5)}, ${p.grass}`;
   }
   if (type === "fels") {
-    return `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.16) 0.6px, transparent 1.4px) 0 0/7px 7px, repeating-linear-gradient(135deg, ${p.fels[0]}, ${p.fels[0]} 5px, ${p.fels[1]} 5px, ${p.fels[1]} 10px)`;
+    return `${checker("rgba(255,255,255,0.12)", "rgba(0,0,0,0.12)", 6)}, repeating-linear-gradient(135deg, ${p.fels[0]}, ${p.fels[0]} 5px, ${p.fels[1]} 5px, ${p.fels[1]} 10px)`;
   }
   if (type === "wasser") {
     return `repeating-linear-gradient(120deg, ${p.wasser[0]}, ${p.wasser[0]} 6px, ${p.wasser[1]} 6px, ${p.wasser[1]} 12px)`;
   }
   if (type === "mine") {
-    return `radial-gradient(circle at 40% 35%, rgba(232,196,104,0.22) 0.6px, transparent 1.4px) 0 0/8px 8px, repeating-linear-gradient(135deg, ${p.mine[0]}, ${p.mine[0]} 5px, ${p.mine[1]} 5px, ${p.mine[1]} 10px)`;
+    return `${checker("rgba(232,196,104,0.22)", "rgba(0,0,0,0.10)", 6)}, repeating-linear-gradient(135deg, ${p.mine[0]}, ${p.mine[0]} 5px, ${p.mine[1]} 5px, ${p.mine[1]} 10px)`;
   }
   return p.grass;
 }
@@ -262,6 +292,32 @@ export function getTileBg(region, type) {
 // Buildings that feel "alive" get a small looping activity puff (forge
 // smoke, hearth smoke, work dust) purely via CSS pseudo-elements.
 export const SMOKE_BUILDINGS = new Set(["holzfaeller", "steinbruch", "bauernhof", "schmiede", "haus"]);
+
+// ---------------------------------------------------------------------------
+// Voxel cube geometry — buildings and trees are rendered as 3-faced blocks
+// (top/left/right, like a Minecraft-style prop) instead of a flat wall +
+// roof cap. All three faces plus a dark silhouette (for a crisp outline)
+// share one clip-path polygon set, computed in pixels so hover/animation
+// CSS doesn't need to know the tile's iso dimensions.
+// ---------------------------------------------------------------------------
+export function cubeFaces(width, topHeight, extrude) {
+  const w = width, h = topHeight;
+  const pt = (x, y) => `${x}px ${y}px`;
+  const N = pt(w / 2, 0);
+  const E = pt(w, h / 2);
+  const Eb = pt(w, h / 2 + extrude);
+  const Sb = pt(w / 2, h + extrude);
+  const Wb = pt(0, h / 2 + extrude);
+  const W = pt(0, h / 2);
+  const Stop = pt(w / 2, h);
+  return {
+    height: h + extrude,
+    top: `polygon(${N}, ${E}, ${Stop}, ${W})`,
+    left: `polygon(${W}, ${Stop}, ${Sb}, ${Wb})`,
+    right: `polygon(${Stop}, ${E}, ${Eb}, ${Sb})`,
+    silhouette: `polygon(${N}, ${E}, ${Eb}, ${Sb}, ${Wb}, ${W})`,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Small pure helpers
@@ -353,14 +409,15 @@ export const GLOBAL_STYLES = `
 .kw-tile { transition: filter 0.12s ease; }
 .kw-tile:hover { filter: brightness(1.18); }
 
-.kw-building { box-shadow: inset 0 -3px 0 rgba(0,0,0,0.18), inset 0 2px 0 rgba(255,255,255,0.14); }
-
-.kw-building-3d {
-  box-shadow: inset 0 -3px 0 rgba(0,0,0,0.18), inset 0 2px 0 rgba(255,255,255,0.14), 0 3px 0 rgba(0,0,0,0.22), 0 6px 7px rgba(0,0,0,0.28);
-}
+.kw-roof { box-shadow: inset 0 -2px 0 rgba(0,0,0,0.2), inset 0 2px 0 rgba(255,255,255,0.16), 0 3px 5px rgba(0,0,0,0.3); }
 
 .kw-townhall { position: relative; }
 .kw-townhall::after { content: ""; position: absolute; top: -4px; left: 50%; transform: translateX(-50%); width: 3px; height: 9px; background: #C24A4A; border-radius: 1px 1px 0 0; }
 
 .zone-fog { position: absolute; inset: 0; background: rgba(10,14,10,0.55); pointer-events: none; }
+
+.kw-modal-overlay {
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  box-sizing: border-box;
+}
 `;
