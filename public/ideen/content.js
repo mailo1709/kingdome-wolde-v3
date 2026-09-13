@@ -380,67 +380,108 @@ window.APP_CONTENT = (function () {
   ];
 
   // ---------------------------------------------------------------------------
-  // ASSETS – kostenlose Musik, Sounds, Bilder, Videos, Schriften
-  // Alles legal & gratis nutzbar (Lizenzhinweis beachten).
+  // MEDIATHEK – kostenlose Musik, Sounds, Bilder, Videos, Erklärvideos
+  // Hinweis: Echte Dateien dürfen aus Urheberrecht-/Größengründen nicht
+  // eingebettet werden. Jede Kachel öffnet eine kuratierte Suche in einer
+  // legal & gratis nutzbaren Bibliothek (zusammen zehntausende Treffer).
   // ---------------------------------------------------------------------------
+  const pxMusic = (q) => 'https://pixabay.com/music/search/' + encodeURIComponent(q) + '/';
+  const pxSfx   = (q) => 'https://pixabay.com/sound-effects/search/' + encodeURIComponent(q) + '/';
+  const pxVideo = (q) => 'https://pixabay.com/videos/search/' + encodeURIComponent(q) + '/';
+  const pexV    = (q) => 'https://www.pexels.com/search/videos/' + encodeURIComponent(q) + '/';
+  const pexP    = (q) => 'https://www.pexels.com/search/' + encodeURIComponent(q) + '/';
+  const yt      = (q) => 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
+
+  // Musik nach Stimmung/Genre (Pixabay Music, keine Namensnennung nötig)
+  const MUSIC_MOODS = [
+    ['Cinematic / Filmisch','cinematic'],['Epic / Trailer','epic'],['Chill / Lofi','lofi'],
+    ['Hip-Hop / Beats','hip hop'],['Vlog / Happy','vlog'],['Corporate / Clean','corporate'],
+    ['Emotional / Sad','sad emotional'],['Spannung / Suspense','suspense'],['EDM / Electronic','edm'],
+    ['Rock','rock'],['Ambient / Chill','ambient'],['Motivierend','motivational'],
+    ['Lustig / Quirky','funny'],['Phonk (Trend)','phonk'],['Jazz','jazz'],['Acoustic','acoustic'],
+    ['Pop','pop'],['Drum & Bass','drum and bass'],['Synthwave / Retro','synthwave'],
+    ['Gaming','gaming'],['Feiertage / Christmas','christmas'],['Meditation / Entspannung','meditation'],
+  ];
+  // Soundeffekte nach Typ (Pixabay SFX)
+  const SFX_TYPES = [
+    ['Whoosh / Übergang','whoosh'],['Transition','transition'],['Klick / UI','click'],
+    ['Impact / Boom','impact'],['Riser / Sweep','riser'],['Pop','pop'],['Notification','notification'],
+    ['Applaus / Crowd','applause'],['Glitch','glitch'],['Ding / Bell','bell'],['Error / Buzzer','error'],
+    ['Coin / Game','coin'],['Kamera-Auslöser','camera shutter'],['Tastatur','keyboard'],
+    ['Schritte / Foley','footsteps'],['Regen','rain'],['Wind','wind'],['Feuer','fire'],
+    ['Meme / Funny','meme'],['Swoosh','swoosh'],
+  ];
+  // Video / B-Roll Kategorien (Pexels Videos, gratis, keine Namensnennung)
+  const VIDEO_CATS = [
+    ['Natur','nature'],['Stadt / City','city'],['Technik','technology'],['Essen / Food','food'],
+    ['Fitness / Sport','fitness'],['Reisen','travel'],['Business / Office','business'],
+    ['Abstrakt / Hintergrund','abstract background'],['Lifestyle','lifestyle'],['Tiere','animals'],
+    ['Weltraum','space'],['Autos','car'],['Menschen','people'],['Meer / Ozean','ocean'],
+    ['Berge','mountains'],['Wald','forest'],['Himmel / Wolken','clouds'],['Nacht / Neon','neon night'],
+    ['Kaffee','coffee'],['Geld / Finance','money'],['Gaming','gaming'],['Mode / Fashion','fashion'],
+    ['Drohne / Luftaufnahme','drone aerial'],['Zeitlupe','slow motion'],['Musik / Konzert','concert'],
+  ];
+  // Overlays & Effekte (Pixabay Videos)
+  const OVERLAY_TYPES = [
+    ['Light Leaks','light leak'],['Staub / Dust','dust overlay'],['Bokeh','bokeh'],['Rauch / Smoke','smoke'],
+    ['Film Grain','film grain'],['Glitch','glitch overlay'],['Regen','rain overlay'],['Schnee','snow overlay'],
+    ['Lens Flare','lens flare'],['Partikel','particles'],['Konfetti','confetti'],['Feuer','fire overlay'],
+  ];
+  // Erklär-/Tutorial-Themen (YouTube)
+  const TUTORIAL_TOPICS = [
+    ['CapCut Grundlagen','capcut tutorial deutsch anfänger'],['Premiere Pro Grundlagen','premiere pro tutorial deutsch anfänger'],
+    ['DaVinci Resolve Grundlagen','davinci resolve tutorial deutsch anfänger'],['After Effects Basics','after effects tutorial deutsch anfänger'],
+    ['Farbkorrektur / Color Grading','color grading tutorial deutsch'],['Speed Ramp','speed ramp tutorial deutsch'],
+    ['Keyframes / Animation','keyframe animation tutorial deutsch'],['Übergänge / Transitions','transition tutorial capcut deutsch'],
+    ['Der perfekte Hook','video hook erste sekunden deutsch'],['Thumbnails erstellen','youtube thumbnail tutorial deutsch'],
+    ['Storytelling','storytelling video tutorial deutsch'],['Green Screen','green screen tutorial deutsch'],
+    ['Untertitel / Captions','auto untertitel capcut tutorial'],['Sounddesign','sounddesign video tutorial deutsch'],
+    ['Motion Graphics','motion graphics tutorial deutsch'],['Foto-Bearbeitung / Lightroom','lightroom tutorial deutsch anfänger'],
+    ['Kamera-Einstellungen','kamera einstellungen video tutorial deutsch'],['Beleuchtung / Licht','video beleuchtung tutorial deutsch'],
+    ['Mikrofon / guter Ton','video ton mikrofon tutorial deutsch'],['YouTube-Algorithmus','youtube algorithmus erklärt deutsch'],
+    ['TikTok wachsen','tiktok wachstum tipps deutsch'],['Instagram Reels Strategie','instagram reels strategie deutsch'],
+    ['Monetarisierung / Geld verdienen','als content creator geld verdienen deutsch'],['Skript schreiben','video skript schreiben tutorial deutsch'],
+    ['Retention halten','video retention tipps deutsch'],
+  ];
+  // Bilder / Fotos Kategorien (Pexels)
+  const PHOTO_CATS = [
+    ['Natur','nature'],['Stadt','city'],['Technik','technology'],['Essen','food'],['Business','business'],
+    ['Menschen','people'],['Lifestyle','lifestyle'],['Reisen','travel'],['Fitness','fitness'],
+    ['Hintergründe','abstract background'],['Tiere','animals'],['Mode','fashion'],['Auto','car'],['Geld','money'],
+  ];
+
+  const mkItems = (arr, urlFn, tail) => arr.map(([name,q]) => ({name, desc: q + (tail||''), url: urlFn(q)}));
+
   const ASSETS = [
     {
-      cat: "🎵 Musik (lizenzfrei)",
-      note: "Frei nutzbar – Lizenz pro Titel prüfen. Manche wollen eine Namensnennung, viele nicht.",
+      cat: '⭐ Die besten Gratis-Quellen',
+      note: 'Startpunkte – hier findest du (fast) alles. Lizenz pro Datei prüfen; vieles ohne Namensnennung.',
       items: [
-        { name: "Pixabay Music", desc: "Riesige Auswahl, keine Namensnennung nötig, auch kommerziell.", url: "https://pixabay.com/music/" },
-        { name: "YouTube Audio Library", desc: "Direkt im YouTube-Studio, klar gekennzeichnet (mit/ohne Namensnennung).", url: "https://www.youtube.com/audiolibrary" },
-        { name: "Mixkit – Music", desc: "Kuratierte, moderne Tracks, gratis für Social & YouTube.", url: "https://mixkit.co/free-stock-music/" },
-        { name: "Uppbeat", desc: "Sehr YouTube-freundlich, kostenloser Plan mit Credits (Copyright-sicher).", url: "https://uppbeat.io/" },
-        { name: "Chosic", desc: "Creative-Commons-Musik, gut sortiert nach Stimmung.", url: "https://www.chosic.com/free-music/all/" },
+        { name: 'Pixabay', desc: 'Musik, SFX, Fotos & Videos – gratis, keine Namensnennung nötig.', url: 'https://pixabay.com/' },
+        { name: 'Pexels', desc: 'Top Fotos & Videos, gratis, keine Namensnennung.', url: 'https://www.pexels.com/' },
+        { name: 'Mixkit', desc: 'Kuratierte Musik, SFX, Video-Clips & Templates.', url: 'https://mixkit.co/' },
+        { name: 'YouTube Audio Library', desc: 'Musik & SFX direkt im YouTube-Studio (Copyright-sicher).', url: 'https://www.youtube.com/audiolibrary' },
+        { name: 'Uppbeat', desc: 'YouTube-freundliche Musik, gratis Plan mit Credits.', url: 'https://uppbeat.io/' },
       ],
     },
-    {
-      cat: "🔊 Soundeffekte (SFX)",
-      note: "Whooshes, Klicks, Übergänge, Ambience.",
+    { cat: '🎵 Musik nach Stimmung', note: 'Öffnet Pixabay-Music-Suche (1000+ Tracks pro Kategorie, gratis, ohne Namensnennung).',
+      items: mkItems(MUSIC_MOODS, pxMusic, ' – Tracks auf Pixabay') },
+    { cat: '🔊 Soundeffekte (SFX)', note: 'Whooshes, Klicks, Impacts & mehr – Pixabay Sound-Effects (gratis).',
+      items: mkItems(SFX_TYPES, pxSfx, ' – Effekte auf Pixabay') },
+    { cat: '🎞️ Videos / B-Roll für Edits', note: 'Fertige Clips für Zwischenschnitte & Hintergründe – Pexels Videos (gratis, keine Namensnennung).',
+      items: mkItems(VIDEO_CATS, pexV, ' – Clips auf Pexels') },
+    { cat: '✨ Overlays & Effekte', note: 'Light Leaks, Staub, Rauch, Glitch … als Overlay über deinen Clip legen – Pixabay Videos.',
+      items: mkItems(OVERLAY_TYPES, pxVideo, ' – Overlays auf Pixabay') },
+    { cat: '📚 Erklärvideos / Tutorials', note: 'Öffnet die YouTube-Suche zum Thema (tausende Erklärvideos, laufend aktuell).',
+      items: mkItems(TUTORIAL_TOPICS, yt, ' – auf YouTube') },
+    { cat: '🖼️ Bilder / Fotos', note: 'Hochwertige Stock-Fotos – Pexels (gratis, keine Namensnennung).',
+      items: mkItems(PHOTO_CATS, pexP, ' – Fotos auf Pexels') },
+    { cat: '🔤 Schriften (Fonts)', note: 'Für Titel & Untertitel. Kommerzielle Nutzung pro Schrift prüfen.',
       items: [
-        { name: "Pixabay – Sound Effects", desc: "Große Gratis-Sammlung, keine Namensnennung nötig.", url: "https://pixabay.com/sound-effects/" },
-        { name: "Mixkit – Sound Effects", desc: "Saubere, moderne Effekte, gratis.", url: "https://mixkit.co/free-sound-effects/" },
-        { name: "Freesound", desc: "Community-Sammlung, sehr umfangreich (Lizenz pro Datei prüfen).", url: "https://freesound.org/" },
-      ],
-    },
-    {
-      cat: "🖼️ Bilder / Stock-Fotos",
-      note: "Kostenlos, meist ohne Namensnennung, auch kommerziell.",
-      items: [
-        { name: "Pexels", desc: "Hochwertige Fotos, gratis, keine Namensnennung.", url: "https://www.pexels.com/" },
-        { name: "Unsplash", desc: "Stylische, moderne Fotos, gratis.", url: "https://unsplash.com/" },
-        { name: "Pixabay", desc: "Fotos, Illustrationen, Vektoren – alles gratis.", url: "https://pixabay.com/" },
-      ],
-    },
-    {
-      cat: "🎞️ Stock-Videos / B-Roll",
-      note: "Fertige Clips für Hintergründe und Zwischenschnitte.",
-      items: [
-        { name: "Pexels Videos", desc: "Gratis 4K/HD-Clips, keine Namensnennung.", url: "https://www.pexels.com/videos/" },
-        { name: "Pixabay Videos", desc: "Große Auswahl kostenloser Clips.", url: "https://pixabay.com/videos/" },
-        { name: "Mixkit – Video", desc: "Kuratierte, cinematische Clips.", url: "https://mixkit.co/free-stock-video/" },
-        { name: "Coverr", desc: "Schöne Loop-/Hintergrundvideos, gratis.", url: "https://coverr.co/" },
-      ],
-    },
-    {
-      cat: "✨ Overlays, LUTs & Effekte",
-      note: "Suchlinks – am besten „free“ + „no copyright“ dazuschreiben und Lizenz prüfen.",
-      items: [
-        { name: "Kostenlose LUTs (YouTube-Suche)", desc: "Anleitungen & Gratis-LUT-Pakete finden.", url: "https://www.youtube.com/results?search_query=free+luts+download" },
-        { name: "Overlays: Pixabay Videos", desc: "Nach „overlay“, „light leak“, „dust“, „bokeh“ suchen.", url: "https://pixabay.com/videos/search/overlay/" },
-        { name: "Mixkit – Video Templates", desc: "Fertige Effekt-/Template-Clips.", url: "https://mixkit.co/free-stock-video/" },
-      ],
-    },
-    {
-      cat: "🔤 Schriften (Fonts)",
-      note: "Für Titel & Untertitel. Kommerzielle Nutzung pro Schrift prüfen.",
-      items: [
-        { name: "Google Fonts", desc: "Riesige, komplett kostenlose Bibliothek, auch kommerziell.", url: "https://fonts.google.com/" },
-        { name: "DaFont", desc: "Sehr viele Stil-Schriften (Lizenz je Schrift beachten).", url: "https://www.dafont.com/" },
-        { name: "Fontshare", desc: "Hochwertige Schriften, gratis auch für kommerziell.", url: "https://www.fontshare.com/" },
-      ],
-    },
+        { name: 'Google Fonts', desc: 'Riesige, komplett kostenlose Bibliothek, auch kommerziell.', url: 'https://fonts.google.com/' },
+        { name: 'Fontshare', desc: 'Hochwertige Schriften, gratis auch für kommerziell.', url: 'https://www.fontshare.com/' },
+        { name: 'DaFont', desc: 'Sehr viele Stil-Schriften (Lizenz je Schrift beachten).', url: 'https://www.dafont.com/' },
+      ] },
   ];
 
   return { GUIDES, GLOSSARY, ASSETS };

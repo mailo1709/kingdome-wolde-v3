@@ -128,10 +128,52 @@
     .bottomnav{position:fixed;left:0;right:0;bottom:0;z-index:35;display:flex;
       background:var(--bg2);border-top:1px solid var(--line);
       padding-bottom:env(safe-area-inset-bottom)}
-    .navbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
-      padding:9px 4px 8px;font-size:21px;color:var(--muted)}
-    .navbtn span{font-size:11px;font-weight:600}
+    .navbtn{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;
+      padding:9px 2px 8px;font-size:20px;color:var(--muted)}
+    .navbtn span{font-size:10px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .navbtn.active{color:var(--accent2)}
+    /* invoices */
+    .invcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;cursor:pointer}
+    .invcard .ir1{display:flex;align-items:center;gap:8px}
+    .invcard .inum{font-weight:700}
+    .invcard .iamt{margin-left:auto;font-weight:800}
+    .invcard .imeta{color:var(--muted);font-size:13px;margin-top:4px}
+    .ipill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid var(--line)}
+    .ipill.offen{color:var(--warn)} .ipill.bezahlt{color:var(--good)}
+    .invitem{display:flex;gap:7px;margin-bottom:7px;align-items:center}
+    .invitem input.d{flex:1;min-width:0} .invitem input.q{width:56px;flex:0 0 auto;text-align:center}
+    .invitem input.p{width:82px;flex:0 0 auto;text-align:right} .invitem .del{flex:0 0 auto;color:var(--muted);font-size:18px;padding:0 3px}
+    .invtotal{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:14px;line-height:1.7}
+    .invtotal .tr{display:flex;justify-content:space-between}
+    .invtotal .grand{font-weight:800;font-size:16px;border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
+    /* invoice preview / print */
+    .invview{position:fixed;inset:0;z-index:75;background:#3a3550;display:flex;flex-direction:column}
+    .invview-bar{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#0c0c12;border-top:1px solid #222;order:2}
+    .invview-bar button{flex:1;background:#1c1c26;color:#fff;border:1px solid #33333f;border-radius:11px;padding:12px;font-weight:700}
+    .invview-bar #invViewPrint{background:var(--accent);border-color:var(--accent)}
+    .invview-scroll{flex:1;overflow:auto;padding:16px;order:1}
+    .paper{background:#fff;color:#111;max-width:720px;margin:0 auto;border-radius:8px;padding:32px 30px;
+      font-size:14px;line-height:1.55}
+    .paper h1{font-size:24px;margin:0 0 4px;color:#111}
+    .paper .muted{color:#555}
+    .paper table{width:100%;border-collapse:collapse;margin:18px 0;table-layout:fixed}
+    .paper th,.paper td{text-align:left;padding:8px 6px;border-bottom:1px solid #ddd;font-size:13px;
+      word-break:break-word;overflow-wrap:anywhere}
+    .paper th:first-child,.paper td:first-child{width:46%}
+    .paper th:last-child,.paper td:last-child,.paper th:nth-child(2),.paper td:nth-child(2),
+    .paper th:nth-child(3),.paper td:nth-child(3){text-align:right}
+    .paper table.totals{margin-left:auto;width:60%;min-width:200px;table-layout:auto}
+    .paper table.totals td{border:none;padding:3px 6px;width:auto}
+    @media(max-width:480px){ .paper{padding:20px 16px} }
+    .paper .grandrow td{font-weight:800;border-top:2px solid #111;font-size:15px}
+    @media print{
+      body{background:#fff}
+      body>*{display:none!important}
+      #invoiceViewOverlay{display:block!important;position:static;background:#fff}
+      #invoiceViewOverlay .invview-bar{display:none!important}
+      #invoiceViewOverlay .invview-scroll{overflow:visible;padding:0}
+      .paper{box-shadow:none;border-radius:0;max-width:none;padding:0}
+    }
     .toast{position:fixed;left:50%;transform:translateX(-50%);
       bottom:calc(96px + env(safe-area-inset-bottom));background:#000;color:#fff;
       padding:10px 16px;border-radius:12px;font-size:14px;z-index:60;opacity:0;
@@ -227,6 +269,16 @@
       <div id="glossarList" style="margin-top:12px"></div>
     </section>
 
+    <!-- RECHNUNG -->
+    <section id="viewRechnung" hidden>
+      <div class="btnrow" style="margin-top:14px">
+        <button class="btn primary" id="newInvoice">＋ Neue Rechnung</button>
+        <button class="btn ghost" id="bizProfile" style="flex:0 0 auto;padding:13px 16px">🏢 Firmendaten</button>
+      </div>
+      <p class="catnote" id="bizWarn"></p>
+      <div class="list" id="invoiceList"></div>
+    </section>
+
     <!-- ASSETS -->
     <section id="viewAssets" hidden>
       <p class="intro">Kostenlose Musik, Soundeffekte, Bilder, Videos & Schriften. Alles legal nutzbar – <b>Lizenzhinweis pro Datei beachten</b> (manche wollen eine Namensnennung).</p>
@@ -239,9 +291,10 @@
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn active" data-view="ideen">💡<span>Ideen</span></button>
     <button class="navbtn" data-view="uebersicht">📊<span>Übersicht</span></button>
+    <button class="navbtn" data-view="rechnung">🧾<span>Rechnung</span></button>
     <button class="navbtn" data-view="lernen">🎓<span>Lernen</span></button>
     <button class="navbtn" data-view="glossar">📖<span>Glossar</span></button>
-    <button class="navbtn" data-view="assets">🎵<span>Assets</span></button>
+    <button class="navbtn" data-view="assets">🎵<span>Medien</span></button>
   </nav>
 
   <!-- Editor -->
@@ -350,6 +403,99 @@
     </div>
   </div>
 
+  <!-- Rechnungs-Editor -->
+  <div class="overlay" id="invoiceOverlay">
+    <div class="sheet">
+      <h2 id="invEditorTitle">Neue Rechnung</h2>
+      <div class="field two">
+        <div><label>Rechnungsnr.</label><input id="invNo" /></div>
+        <div><label>Status</label>
+          <select id="invStatus"><option value="offen">Offen</option><option value="bezahlt">Bezahlt</option></select>
+        </div>
+      </div>
+      <div class="field two">
+        <div><label>Rechnungsdatum</label><input id="invDate" type="date" /></div>
+        <div><label>Leistungsdatum</label><input id="invServiceDate" type="date" /></div>
+      </div>
+      <div class="field">
+        <label>Kunde (Name)</label>
+        <input id="invClient" placeholder="Max Mustermann / Firma GmbH" />
+      </div>
+      <div class="field">
+        <label>Kunde – Adresse</label>
+        <textarea id="invClientAddr" style="min-height:64px" placeholder="Straße 1&#10;12345 Stadt"></textarea>
+      </div>
+      <div class="field">
+        <label>Positionen (Leistung · Menge · Einzelpreis €)</label>
+        <div id="invItems"></div>
+        <button class="btn ghost" id="invAddItem" type="button" style="margin-top:8px;padding:10px">＋ Position</button>
+      </div>
+      <div class="field two">
+        <div><label>MwSt.-Satz</label>
+          <select id="invVat"><option value="19">19 %</option><option value="7">7 %</option><option value="0">0 %</option></select>
+        </div>
+        <div><label>Kleinunternehmer §19</label>
+          <div class="starrow" style="height:44px"><input type="checkbox" id="invKlein" style="width:auto;transform:scale(1.3)" />
+          <span class="hint" style="margin:0">keine MwSt.</span></div>
+        </div>
+      </div>
+      <div class="invtotal" id="invTotalBox"></div>
+      <div class="field">
+        <label>Notiz (optional)</label>
+        <textarea id="invNote" style="min-height:56px" placeholder="Zahlbar innerhalb 14 Tagen. Vielen Dank!"></textarea>
+      </div>
+      <div class="btnrow">
+        <button class="btn ghost" id="invCancel">Abbrechen</button>
+        <button class="btn primary" id="invSave">Speichern</button>
+      </div>
+      <div class="btnrow">
+        <button class="btn ghost" id="invPreview">👁 Vorschau / PDF</button>
+      </div>
+      <div class="btnrow" id="invDeleteRow" style="display:none">
+        <button class="btn danger" id="invDelete">Rechnung löschen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firmendaten -->
+  <div class="overlay" id="bizOverlay">
+    <div class="sheet">
+      <h2>Firmendaten (Absender)</h2>
+      <p class="hint">Erscheinen oben auf jeder Rechnung. Nur lokal gespeichert.</p>
+      <div class="field"><label>Name / Firma</label><input id="bizName" placeholder="Dein Name" /></div>
+      <div class="field"><label>Adresse</label><textarea id="bizAddr" style="min-height:64px" placeholder="Straße 1&#10;12345 Stadt"></textarea></div>
+      <div class="field two">
+        <div><label>E-Mail</label><input id="bizEmail" type="email" /></div>
+        <div><label>Telefon</label><input id="bizPhone" /></div>
+      </div>
+      <div class="field two">
+        <div><label>Steuernr. / USt-IdNr.</label><input id="bizTax" /></div>
+        <div><label>Bank</label><input id="bizBank" /></div>
+      </div>
+      <div class="field two">
+        <div><label>IBAN</label><input id="bizIban" /></div>
+        <div><label>BIC</label><input id="bizBic" /></div>
+      </div>
+      <div class="starrow" style="justify-content:space-between">
+        <span>Kleinunternehmer §19 (Standard)</span>
+        <input type="checkbox" id="bizKlein" style="width:auto;transform:scale(1.3)" />
+      </div>
+      <div class="btnrow">
+        <button class="btn ghost" id="bizCancel">Abbrechen</button>
+        <button class="btn primary" id="bizSave">Speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rechnung Vorschau / Druck -->
+  <div id="invoiceViewOverlay" class="invview" hidden>
+    <div class="invview-bar">
+      <button id="invViewClose">✕ Schließen</button>
+      <button id="invViewPrint">🖨 Drucken / Als PDF speichern</button>
+    </div>
+    <div class="invview-scroll"><div id="invoicePrint" class="paper"></div></div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
   <!-- Teleprompter -->
@@ -373,7 +519,8 @@
     const $ = (s)=>document.querySelector(s);
     const C = window.APP_CONTENT || {GUIDES:[],GLOSSARY:[],ASSETS:[]};
     const LS = {
-      ideas:'ideen_data', token:'ideen_gh_token', gist:'ideen_gist_id', auto:'ideen_autosync'
+      ideas:'ideen_data', token:'ideen_gh_token', gist:'ideen_gist_id', auto:'ideen_autosync',
+      invoices:'ideen_invoices', biz:'ideen_biz'
     };
     const STAGES = [
       {key:'idee',    label:'💡 Idee',    color:'#8b5cf6'},
@@ -416,9 +563,10 @@
     const VIEWS = {
       ideen:{title:'Ideen', el:'#viewIdeen'},
       uebersicht:{title:'Übersicht', el:'#viewUebersicht'},
+      rechnung:{title:'Rechnungen', el:'#viewRechnung'},
       lernen:{title:'Lernen', el:'#viewLernen'},
       glossar:{title:'Glossar', el:'#viewGlossar'},
-      assets:{title:'Assets', el:'#viewAssets'},
+      assets:{title:'Mediathek', el:'#viewAssets'},
     };
     function setView(v){
       view = v;
@@ -429,6 +577,7 @@
       document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
       try{ if(('#'+v)!==location.hash) history.replaceState(null,'','#'+v); }catch(e){}
       if(v==='uebersicht') renderUebersicht();
+      if(v==='rechnung') renderInvoices();
       if(v==='lernen') renderGuides();
       if(v==='glossar') renderGlossar();
       if(v==='assets') renderAssets();
@@ -699,6 +848,17 @@
 
     // ---------- GitHub Gist Sync ----------
     const GIST_FILE='ideen.json';
+    const INV_FILE='rechnungen.json';
+    function invPayload(){ return JSON.stringify({invoices, biz:getBiz()}, null, 2); }
+    async function pullInvoices(f){
+      if(!f) return;
+      try{ let content=f.content; if(f.truncated && f.raw_url){ content=await (await fetch(f.raw_url)).text(); }
+        const parsed=JSON.parse(content);
+        mergeInvoices(parsed.invoices);
+        const rb=parsed.biz, lb=getBiz();
+        if(rb && (rb.updatedAt||0) > (lb.updatedAt||0)){ setBiz(rb); if(view==='rechnung') renderInvoices(); }
+      }catch(e){}
+    }
     function getToken(){ return localStorage.getItem(LS.token)||''; }
     function getGistId(){ return localStorage.getItem(LS.gist)||''; }
     function ghHeaders(){ return {'Authorization':'Bearer '+getToken(),
@@ -735,17 +895,17 @@
               if(f.truncated && f.raw_url){ content=await (await fetch(f.raw_url)).text(); }
               try{ mergeRemote(JSON.parse(content)); }catch(e){}
             }
+            await pullInvoices(data.files && data.files[INV_FILE]);
           }
         }
+        const files={[GIST_FILE]:{content:JSON.stringify(ideas,null,2)},[INV_FILE]:{content:invPayload()}};
         let res2, out;
         if(gid){
           res2=await fetch('https://api.github.com/gists/'+gid,{method:'PATCH',headers:ghHeaders(),
-            body:JSON.stringify({description:'Ideen-App Daten',
-              files:{[GIST_FILE]:{content:JSON.stringify(ideas,null,2)}}})});
+            body:JSON.stringify({description:'Ideen-App Daten',files})});
         }else{
           res2=await fetch('https://api.github.com/gists',{method:'POST',headers:ghHeaders(),
-            body:JSON.stringify({description:'Ideen-App Daten',public:false,
-              files:{[GIST_FILE]:{content:JSON.stringify(ideas,null,2)}}})});
+            body:JSON.stringify({description:'Ideen-App Daten',public:false,files})});
         }
         if(!res2.ok){
           if(res2.status===401) throw new Error('Token ungültig (401)');
@@ -837,6 +997,157 @@
       toast('Neuer Vorschlag ✨ – anpassen & speichern');
     }
 
+    // ---------- Rechnungen ----------
+    let invoices = loadInvoices();
+    let editInvId = null, editInvItems = [];
+    function loadInvoices(){ try{ return JSON.parse(localStorage.getItem(LS.invoices))||[]; }catch(e){ return []; } }
+    function saveInvoices(){ try{ localStorage.setItem(LS.invoices, JSON.stringify(invoices)); }catch(e){} }
+    const activeInv = ()=> invoices.filter(x=>!x.deleted);
+    function getBiz(){ try{ return JSON.parse(localStorage.getItem(LS.biz))||{}; }catch(e){ return {}; } }
+    function setBiz(o){ try{ localStorage.setItem(LS.biz, JSON.stringify(o)); }catch(e){} }
+    function money(n){ return (Number(n)||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'}); }
+    function calcInv(items, vatRate, klein){
+      const net = (items||[]).reduce((s,it)=> s + (Number(it.qty)||0)*(Number(it.price)||0), 0);
+      const rate = klein?0:(Number(vatRate)||0);
+      const vat = net*rate/100;
+      return {net, rate, vat, gross:net+vat, klein:!!klein};
+    }
+    function nextInvNo(){
+      const y=new Date().getFullYear();
+      const cnt=activeInv().filter(i=>(i.number||'').indexOf(y+'-')===0).length;
+      return y+'-'+String(cnt+1).padStart(3,'0');
+    }
+    function renderInvoices(){
+      const b=getBiz();
+      $('#bizWarn').textContent = b.name ? '' : '⚠️ Trage zuerst deine Firmendaten ein (Button oben).';
+      const items=activeInv().sort((a,b2)=>(b2.date||'').localeCompare(a.date||'')|| (b2.createdAt-a.createdAt));
+      const el=$('#invoiceList');
+      if(!items.length){ el.innerHTML=`<div class="empty"><div class="big">🧾</div><p>Noch keine Rechnung.<br>Tippe auf „＋ Neue Rechnung".</p></div>`; return; }
+      el.innerHTML=items.map(i=>{
+        const t=calcInv(i.items,i.vat,i.klein);
+        return `<div class="invcard" data-id="${i.id}">
+          <div class="ir1"><span class="inum">Nr. ${esc(i.number||'—')}</span>
+            <span class="ipill ${i.status==='bezahlt'?'bezahlt':'offen'}">${i.status==='bezahlt'?'Bezahlt':'Offen'}</span>
+            <span class="iamt">${money(t.gross)}</span></div>
+          <div class="imeta">${esc(i.client||'Ohne Kunde')}${i.date?' · '+esc(fmtDate(i.date)):''}</div>
+        </div>`;
+      }).join('');
+      el.querySelectorAll('.invcard').forEach(c=>c.onclick=()=>openInvoice(c.dataset.id));
+    }
+    function renderInvItems(){
+      $('#invItems').innerHTML = editInvItems.map((it,idx)=>
+        `<div class="invitem">
+          <input class="d" data-d="${idx}" value="${esc(it.desc)}" placeholder="Leistung / Beschreibung" />
+          <input class="q" data-q="${idx}" type="number" inputmode="decimal" value="${esc(it.qty)}" placeholder="1" />
+          <input class="p" data-p="${idx}" type="number" inputmode="decimal" value="${esc(it.price)}" placeholder="0" />
+          <button type="button" class="del" data-x="${idx}" title="Entfernen">✕</button>
+        </div>`).join('') || '<p class="hint" style="margin:0">Noch keine Position. „＋ Position" antippen.</p>';
+      const el=$('#invItems');
+      el.querySelectorAll('input.d').forEach(i=>i.oninput=()=>{editInvItems[+i.dataset.d].desc=i.value;});
+      el.querySelectorAll('input.q').forEach(i=>i.oninput=()=>{editInvItems[+i.dataset.q].qty=i.value; showInvTotal();});
+      el.querySelectorAll('input.p').forEach(i=>i.oninput=()=>{editInvItems[+i.dataset.p].price=i.value; showInvTotal();});
+      el.querySelectorAll('.del').forEach(b=>b.onclick=()=>{editInvItems.splice(+b.dataset.x,1);renderInvItems();showInvTotal();});
+    }
+    function showInvTotal(){
+      const t=calcInv(editInvItems, $('#invVat').value, $('#invKlein').checked);
+      $('#invTotalBox').innerHTML =
+        `<div class="tr"><span>Netto</span><span>${money(t.net)}</span></div>`+
+        (t.klein?`<div class="tr"><span>MwSt.</span><span>—</span></div>`
+                :`<div class="tr"><span>zzgl. ${t.rate}% MwSt.</span><span>${money(t.vat)}</span></div>`)+
+        `<div class="tr grand"><span>Gesamt</span><span>${money(t.gross)}</span></div>`;
+    }
+    function openInvoice(id){
+      editInvId = id||null;
+      const b=getBiz();
+      const inv = id ? invoices.find(x=>x.id===id) : null;
+      $('#invEditorTitle').textContent = inv?'Rechnung bearbeiten':'Neue Rechnung';
+      $('#invNo').value = inv?.number || nextInvNo();
+      $('#invStatus').value = inv?.status || 'offen';
+      $('#invDate').value = inv?.date || new Date().toISOString().slice(0,10);
+      $('#invServiceDate').value = inv?.serviceDate || '';
+      $('#invClient').value = inv?.client || '';
+      $('#invClientAddr').value = inv?.clientAddr || '';
+      $('#invVat').value = String(inv? (inv.vat!=null?inv.vat:19) : (b.defaultVat!=null?b.defaultVat:19));
+      $('#invKlein').checked = inv? !!inv.klein : !!b.klein;
+      $('#invNote').value = inv?.note || (b.klein?'Gemäß §19 UStG wird keine Umsatzsteuer berechnet.':'Zahlbar innerhalb von 14 Tagen ohne Abzug.');
+      editInvItems = (inv?.items||[{desc:'',qty:1,price:0}]).map(it=>({desc:it.desc||'',qty:it.qty,price:it.price}));
+      renderInvItems(); showInvTotal();
+      $('#invDeleteRow').style.display = inv?'flex':'none';
+      openSheet('#invoiceOverlay');
+    }
+    function saveInvoice(){
+      const items=editInvItems.filter(it=>(it.desc||'').trim()||Number(it.price)).map(it=>({desc:(it.desc||'').trim(),qty:Number(it.qty)||0,price:Number(it.price)||0}));
+      if(!$('#invClient').value.trim() && !items.length){ toast('Kunde oder Position eingeben'); return; }
+      const now=Date.now();
+      const data={number:$('#invNo').value.trim(),status:$('#invStatus').value,date:$('#invDate').value,
+        serviceDate:$('#invServiceDate').value,client:$('#invClient').value.trim(),clientAddr:$('#invClientAddr').value.trim(),
+        items,vat:Number($('#invVat').value),klein:$('#invKlein').checked,note:$('#invNote').value.trim(),updatedAt:now};
+      if(editInvId){ Object.assign(invoices.find(x=>x.id===editInvId),data); }
+      else{ invoices.push(Object.assign({id:uid(),createdAt:now,deleted:false},data)); }
+      saveInvoices(); renderInvoices(); closeSheet('#invoiceOverlay'); toast('Rechnung gespeichert');
+      maybeAutoSync();
+    }
+    function deleteInvoice(){
+      if(!editInvId) return;
+      if(!confirm('Diese Rechnung wirklich löschen?')) return;
+      const inv=invoices.find(x=>x.id===editInvId);
+      if(inv){ inv.deleted=true; inv.updatedAt=Date.now(); }
+      saveInvoices(); renderInvoices(); closeSheet('#invoiceOverlay'); toast('Gelöscht'); maybeAutoSync();
+    }
+    function nl2br(s){ return esc(s).replace(/\n/g,'<br>'); }
+    function previewInvoice(){
+      const b=getBiz();
+      const items=editInvItems.filter(it=>(it.desc||'').trim()||Number(it.price)).map(it=>({desc:(it.desc||'').trim(),qty:Number(it.qty)||0,price:Number(it.price)||0}));
+      const t=calcInv(items,$('#invVat').value,$('#invKlein').checked);
+      const rows=items.map(it=>`<tr><td>${esc(it.desc)}</td><td>${it.qty}</td><td>${money(it.price)}</td><td>${money(it.qty*it.price)}</td></tr>`).join('');
+      const paper=`
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div><h1>${esc(b.name||'Deine Firma')}</h1><div class="muted">${nl2br(b.addr||'')}</div>
+            <div class="muted">${b.email?esc(b.email)+' · ':''}${esc(b.phone||'')}</div></div>
+          <div style="text-align:right"><h1 style="font-size:20px">RECHNUNG</h1>
+            <div class="muted">Nr. ${esc($('#invNo').value)}</div>
+            <div class="muted">Datum: ${esc(fmtDate($('#invDate').value)||'')}</div>
+            ${$('#invServiceDate').value?`<div class="muted">Leistung: ${esc(fmtDate($('#invServiceDate').value))}</div>`:''}</div>
+        </div>
+        <div style="margin-top:22px"><div class="muted" style="font-size:12px">RECHNUNG AN</div>
+          <div style="font-weight:700">${esc($('#invClient').value||'—')}</div>
+          <div class="muted">${nl2br($('#invClientAddr').value||'')}</div></div>
+        <table><thead><tr><th>Leistung</th><th>Menge</th><th>Einzel</th><th>Gesamt</th></tr></thead>
+          <tbody>${rows||'<tr><td colspan="4" class="muted">Keine Positionen</td></tr>'}</tbody></table>
+        <table class="totals"><tbody>
+          <tr><td>Netto</td><td>${money(t.net)}</td></tr>
+          ${t.klein?'<tr><td>MwSt.</td><td>—</td></tr>':`<tr><td>zzgl. ${t.rate}% MwSt.</td><td>${money(t.vat)}</td></tr>`}
+          <tr class="grandrow"><td>Gesamtbetrag</td><td>${money(t.gross)}</td></tr>
+        </tbody></table>
+        ${$('#invNote').value?`<p class="muted" style="margin-top:16px">${nl2br($('#invNote').value)}</p>`:''}
+        ${(b.iban||b.bank)?`<p class="muted" style="margin-top:14px">Bankverbindung: ${esc(b.bank||'')}${b.iban?' · IBAN '+esc(b.iban):''}${b.bic?' · BIC '+esc(b.bic):''}</p>`:''}
+        ${b.tax?`<p class="muted" style="margin-top:4px">Steuernr./USt-IdNr.: ${esc(b.tax)}</p>`:''}
+      `;
+      $('#invoicePrint').innerHTML=paper;
+      $('#invoiceViewOverlay').hidden=false;
+    }
+    function openBiz(){
+      const b=getBiz();
+      $('#bizName').value=b.name||''; $('#bizAddr').value=b.addr||''; $('#bizEmail').value=b.email||'';
+      $('#bizPhone').value=b.phone||''; $('#bizTax').value=b.tax||''; $('#bizBank').value=b.bank||'';
+      $('#bizIban').value=b.iban||''; $('#bizBic').value=b.bic||''; $('#bizKlein').checked=!!b.klein;
+      openSheet('#bizOverlay');
+    }
+    function saveBiz(){
+      setBiz({name:$('#bizName').value.trim(),addr:$('#bizAddr').value.trim(),email:$('#bizEmail').value.trim(),
+        phone:$('#bizPhone').value.trim(),tax:$('#bizTax').value.trim(),bank:$('#bizBank').value.trim(),
+        iban:$('#bizIban').value.trim(),bic:$('#bizBic').value.trim(),klein:$('#bizKlein').checked,
+        defaultVat:19,updatedAt:Date.now()});
+      closeSheet('#bizOverlay'); renderInvoices(); toast('Firmendaten gespeichert'); maybeAutoSync();
+    }
+    function mergeInvoices(remoteArr){
+      const map={}; invoices.forEach(i=>map[i.id]=i); let changed=false;
+      (remoteArr||[]).forEach(r=>{ if(!r||!r.id) return; const cur=map[r.id];
+        if(!cur || (r.updatedAt||0)>(cur.updatedAt||0)){ map[r.id]=r; changed=true; } });
+      invoices=Object.values(map);
+      if(changed){ saveInvoices(); if(view==='rechnung') renderInvoices(); }
+    }
+
     // ---------- Teleprompter ----------
     let teleY=0, teleSpeed=60, teleRun=false, teleRAF=null, teleLast=0, teleFont=34;
     function teleFrame(ts){
@@ -900,6 +1211,20 @@
     $('#teleFontUp').onclick=()=>{ teleFont=Math.min(72,teleFont+4); $('#teleText').style.fontSize=teleFont+'px'; };
     $('#teleFontDn').onclick=()=>{ teleFont=Math.max(18,teleFont-4); $('#teleText').style.fontSize=teleFont+'px'; };
     $('#teleRestart').onclick=()=>{ teleY=0; $('#teleText').style.transform='translateY(0)'; };
+    // Rechnungen
+    $('#newInvoice').onclick=()=>openInvoice(null);
+    $('#bizProfile').onclick=openBiz;
+    $('#invAddItem').onclick=()=>{ editInvItems.push({desc:'',qty:1,price:0}); renderInvItems(); showInvTotal(); };
+    $('#invVat').onchange=showInvTotal;
+    $('#invKlein').onchange=showInvTotal;
+    $('#invCancel').onclick=()=>closeSheet('#invoiceOverlay');
+    $('#invSave').onclick=saveInvoice;
+    $('#invDelete').onclick=deleteInvoice;
+    $('#invPreview').onclick=previewInvoice;
+    $('#bizCancel').onclick=()=>closeSheet('#bizOverlay');
+    $('#bizSave').onclick=saveBiz;
+    $('#invViewClose').onclick=()=>{ $('#invoiceViewOverlay').hidden=true; };
+    $('#invViewPrint').onclick=()=>window.print();
 
     $('#btnSettings').onclick=()=>{
       $('#sToken').value=getToken();
