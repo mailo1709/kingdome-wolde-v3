@@ -92,6 +92,15 @@
     footer .cols{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
     .impressum{margin-top:20px;font-size:12.5px;line-height:1.7;color:#8f88ad;
       background:var(--bg2);border:1px dashed var(--line);border-radius:12px;padding:14px 16px}
+    .btn .ico{width:18px;height:18px;vertical-align:-3px;margin-right:8px}
+    .equipgrid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+    .equip{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px}
+    .equip h3{margin:0 0 10px;font-size:17px}
+    .equip ul{margin:0;padding-left:18px;color:var(--muted)}
+    .equip li{margin:6px 0}
+    .goal{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+    .goal h3{margin:0 0 6px;font-size:17px}
+    .goal p{margin:0;color:var(--muted);font-size:15px}
   </style>
 </head>
 <body>
@@ -100,8 +109,9 @@
       <div class="brand"><span class="dot">🎬</span><span id="brandName">Dein Video-Studio</span></div>
       <nav class="links">
         <a href="#leistungen">Leistungen</a>
+        <a href="#beispiele">Beispiele</a>
         <a href="#preise">Preise</a>
-        <a href="#ablauf">Ablauf</a>
+        <a href="#ueber">Über uns</a>
         <a href="#kontakt">Kontakt</a>
       </nav>
       <a href="#kontakt" class="btn primary cta" style="padding:10px 18px">Anfrage</a>
@@ -132,18 +142,49 @@
       </div>
     </section>
 
-    <section id="preise" style="background:var(--bg2)">
+    <section id="beispiele" style="background:var(--bg2)">
       <div class="wrap">
-        <div class="sec-h"><h2>Pakete &amp; Preise</h2><p>Klare Festpreise – du weißt immer, was es kostet.</p></div>
-        <div id="pricing"></div>
-        <p class="note">Alle Preise inkl. der genannten Leistungen. Beispielpreise – individuelle Pakete auf Anfrage.</p>
+        <div class="sec-h"><h2>Beispiele &amp; Trends</h2><p>Unser Portfolio wächst – das sind die Styles, die wir umsetzen (mit Trend-Beispielen zum Reinschauen).</p></div>
+        <div class="grid" id="examples"></div>
+        <p class="note">Eigene Referenzvideos kommen laufend dazu. Du willst ein bestimmtes Format? Sag einfach Bescheid.</p>
       </div>
     </section>
 
-    <section id="ablauf">
+    <section id="preise">
+      <div class="wrap">
+        <div class="sec-h"><h2>Pakete &amp; Preise</h2><p>Faire Festpreise – bewusst etwas unter dem Marktschnitt.</p></div>
+        <div id="pricing"></div>
+        <p class="note">Einführungspreise inkl. der genannten Leistungen. Individuelle Pakete jederzeit auf Anfrage.</p>
+      </div>
+    </section>
+
+    <section id="ablauf" style="background:var(--bg2)">
       <div class="wrap">
         <div class="sec-h"><h2>So läuft's ab</h2><p>Unkompliziert in wenigen Schritten.</p></div>
         <div class="steps" id="steps"></div>
+      </div>
+    </section>
+
+    <section id="ueber">
+      <div class="wrap">
+        <div class="sec-h"><h2>Über uns</h2><p>Ehrlich, bodenständig und mit klarem Plan nach vorne.</p></div>
+        <div class="equipgrid">
+          <div class="equip">
+            <h3>🎥 Womit wir drehen</h3>
+            <ul id="equipRecord"></ul>
+          </div>
+          <div class="equip">
+            <h3>✂️ Womit wir schneiden</h3>
+            <ul id="equipEdit"></ul>
+          </div>
+          <div class="equip">
+            <h3>🎧 Audio (aktuell)</h3>
+            <ul id="equipAudio"></ul>
+          </div>
+        </div>
+        <div class="sec-h" style="margin:36px auto 20px"><h2 style="font-size:24px">Unsere Ziele</h2>
+          <p>Wir investieren laufend in besseres Equipment – für noch bessere Ergebnisse.</p></div>
+        <div class="grid" id="goals"></div>
       </div>
     </section>
 
@@ -153,9 +194,15 @@
           <h2>Bereit für besseren Content?</h2>
           <p>Schreib kurz, was du vorhast – du bekommst schnell ein passendes Angebot mit Festpreis.</p>
           <div class="actions">
-            <a class="btn primary" id="mailBtn" href="mailto:deine@email.de?subject=Anfrage%20Videoschnitt">✉️ Anfrage per E-Mail</a>
-            <a class="btn ghost" id="igBtn" href="#" >📸 Instagram</a>
-            <a class="btn ghost" id="ttBtn" href="#" >🎵 TikTok</a>
+            <a class="btn primary" id="mailBtn" href="mailto:deine@email.de?subject=Anfrage%20Videoschnitt">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+              Anfrage per E-Mail</a>
+            <a class="btn ghost" id="igBtn" href="#">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.6" cy="6.4" r="1.1" fill="currentColor" stroke="none"/></svg>
+              Instagram</a>
+            <a class="btn ghost" id="ttBtn" href="#">
+              <svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c.35 2.1 1.62 3.6 3.9 3.83v2.47c-1.34.08-2.62-.28-3.9-1.05v5.9c0 3.32-2.57 5.85-5.86 5.85A5.7 5.7 0 0 1 5 14.2c0-3.29 2.9-5.86 6.35-5.5v2.6a3.15 3.15 0 0 0-1.03-.17 2.92 2.92 0 0 0-2.9 2.92c0 1.63 1.3 2.95 2.93 2.95a2.9 2.9 0 0 0 2.93-2.86V3h3.22Z"/></svg>
+              TikTok</a>
           </div>
         </div>
       </div>
@@ -216,36 +263,61 @@
     },
     PACKAGES: [
       { group: '🎬 Kurzvideos (Reels · Shorts · TikTok)', items: [
-        { name: 'Starter', price: 149, unit: 'Paket', popular: false, desc: '3 Kurzvideos, professioneller Schnitt',
+        { name: 'Starter', price: 89, unit: '3 Videos', popular: false, desc: '3 Kurzvideos, professioneller Schnitt (~30 €/Video)',
           features: ['3 Videos (bis 60 Sek.)', 'Schnitt + passende Musik', 'Untertitel', '1 Korrekturschleife'] },
-        { name: 'Creator', price: 299, unit: 'Paket', popular: true, desc: '7 Kurzvideos – bestes Preis-Leistungs-Verhältnis',
+        { name: 'Creator', price: 179, unit: '7 Videos', popular: true, desc: '7 Kurzvideos – bestes Preis-Leistungs-Verhältnis (~26 €/Video)',
           features: ['7 Videos', 'Hook-Optimierung', 'Untertitel + Effekte', '2 Korrekturschleifen'] },
-        { name: 'Pro', price: 499, unit: '/ Monat', popular: false, desc: '12 Kurzvideos im Monat – für regelmäßigen Content',
+        { name: 'Pro', price: 290, unit: '/ Monat', popular: false, desc: '12 Kurzvideos im Monat für regelmäßigen Content (~24 €/Video)',
           features: ['12 Videos / Monat', 'Alles aus Creator', 'Thumbnails inklusive', 'Priorität & schnelle Lieferung'] },
       ]},
       { group: '📺 YouTube (Langform)', items: [
-        { name: 'Single', price: 120, unit: '/ Video', popular: false, desc: '1 YouTube-Video, kompletter Schnitt',
-          features: ['bis 10 Min. fertige Länge', 'Schnitt + B-Roll', 'Musik & Sounddesign', '1 Korrekturschleife'] },
-        { name: 'Bundle', price: 420, unit: '4 Videos', popular: true, desc: '4 YouTube-Videos im Paket (sparst 60 €)',
+        { name: 'Single', price: 69, unit: '/ Video', popular: false, desc: '1 YouTube-Video, kompletter Schnitt',
+          features: ['bis ~10 Min. fertige Länge', 'Schnitt + B-Roll', 'Musik & Sounddesign', '1 Korrekturschleife'] },
+        { name: 'Bundle', price: 239, unit: '4 Videos', popular: true, desc: '4 YouTube-Videos im Paket (du sparst ggü. Einzelpreis)',
           features: ['4 Videos', 'Intro/Outro-Vorlage', 'einfache Grafiken', '2 Korrekturschleifen'] },
-        { name: 'Power', price: 690, unit: '7 Videos', popular: false, desc: '7 YouTube-Videos – für aktive Kanäle',
+        { name: 'Power', price: 399, unit: '7 Videos', popular: false, desc: '7 YouTube-Videos – für aktive Kanäle',
           features: ['7 Videos', 'Thumbnails inklusive', 'Priorität', 'monatliche Abstimmung'] },
       ]},
       { group: '🎥 Drehtage', items: [
-        { name: 'Halbtag', price: 199, unit: 'bis 3 Std.', popular: false, desc: 'Kurzer Dreh vor Ort',
-          features: ['bis 3 Stunden', 'Kamera + Licht + Ton', 'Material digital übergeben'] },
-        { name: 'Drehtag', price: 349, unit: 'bis 6 Std.', popular: true, desc: 'Klassischer Drehtag',
-          features: ['bis 6 Stunden', 'Kamera + Licht + Ton', 'kurze Location-Wechsel', 'gesichtetes Material'] },
-        { name: 'Full-Day', price: 549, unit: 'bis 10 Std.', popular: false, desc: 'Ganzer Produktionstag',
+        { name: 'Halbtag', price: 99, unit: 'bis 3 Std.', popular: false, desc: 'Kurzer Dreh vor Ort',
+          features: ['bis 3 Stunden', 'iPhone / Canon EOS / Action-Cam', 'Material digital übergeben'] },
+        { name: 'Drehtag', price: 179, unit: 'bis 6 Std.', popular: true, desc: 'Klassischer Drehtag',
+          features: ['bis 6 Stunden', 'iPhone / Canon EOS / Action-Cam', 'kurze Location-Wechsel', 'gesichtetes Material'] },
+        { name: 'Full-Day', price: 279, unit: 'bis 10 Std.', popular: false, desc: 'Ganzer Produktionstag',
           features: ['bis 10 Stunden', 'komplettes Equipment', 'mehrere Setups/Locations', 'Vorsortierung des Materials'] },
       ]},
       { group: '➕ Zusatzleistungen', items: [
-        { name: 'Thumbnail-Design', price: 25, unit: '/ Stück', popular: false, desc: 'Klickstarkes Vorschaubild', features: [] },
-        { name: 'Untertitel', price: 15, unit: '/ Video', popular: false, desc: 'Saubere, animierte Untertitel', features: [] },
-        { name: 'Farbkorrektur / Grading', price: 30, unit: '/ Video', popular: false, desc: 'Filmischer, einheitlicher Look', features: [] },
+        { name: 'Thumbnail-Design', price: 15, unit: '/ Stück', popular: false, desc: 'Klickstarkes Vorschaubild', features: [] },
+        { name: 'Untertitel', price: 9, unit: '/ Video', popular: false, desc: 'Saubere, animierte Untertitel', features: [] },
+        { name: 'Farbkorrektur / Grading', price: 19, unit: '/ Video', popular: false, desc: 'Filmischer, einheitlicher Look', features: [] },
         { name: 'Express (24 Std.)', price: 0, unit: '+50 %', popular: false, desc: 'Lieferung innerhalb von 24 Stunden', features: [] },
-        { name: 'Extra Korrekturschleife', price: 20, unit: '/ Runde', popular: false, desc: 'Zusätzliche Änderungsrunde', features: [] },
+        { name: 'Extra Korrekturschleife', price: 12, unit: '/ Runde', popular: false, desc: 'Zusätzliche Änderungsrunde', features: [] },
       ]},
+    ],
+
+    // Beispiel-/Trend-Styles (Portfolio wächst – hier Referenz-Suchen zu unseren Styles)
+    EXAMPLES: [
+      { title: 'Velocity / Speed-Ramp Edit', desc: 'Dynamische Beat-Cuts mit Tempo-Wechseln', url: 'https://www.tiktok.com/search?q=velocity%20edit' },
+      { title: 'Clean Transitions (CapCut)', desc: 'Nahtlose Übergänge im Trend-Look', url: 'https://www.tiktok.com/search?q=capcut%20transition' },
+      { title: 'Talking-Head Jump Cuts', desc: 'Schnelle Schnitte + Untertitel für Reels', url: 'https://www.youtube.com/results?search_query=talking+head+jump+cut+reel' },
+      { title: 'Cinematic B-Roll', desc: 'Filmische Zwischenschnitte & Grading', url: 'https://www.youtube.com/results?search_query=cinematic+b-roll+edit' },
+      { title: 'Text-Hook Reels', desc: 'Starker Hook in den ersten 3 Sekunden', url: 'https://www.tiktok.com/search?q=reel%20hook' },
+      { title: 'Aftermovie / Recap', desc: 'Event-/Vlog-Zusammenschnitt mit Musik', url: 'https://www.youtube.com/results?search_query=aftermovie+edit' },
+    ],
+
+    // Womit wir arbeiten
+    EQUIPMENT: {
+      record: ['iPhone 14 Pro Max', 'Canon EOS 60D', 'Action-Cam'],
+      edit: ['iPad Pro (M-Chip) – Schnitt in CapCut / LumaFusion'],
+      audio: ['Apple Kopfhörer (kabelgebunden, Lightning)'],
+    },
+
+    // Unsere Ziele / Roadmap
+    GOALS: [
+      ['🎙️ Neues Audio-Setup', 'Profi-Mikrofon & Studio-Kopfhörer statt der aktuellen kabelgebundenen Apple-Kopfhörer.'],
+      ['🖱️ Zubehör', 'Schnitt-Maus, Adapter & Kabel für schnelleres, saubereres Arbeiten.'],
+      ['🎥 Neue Kamera', 'Sony FX30 (Cinema-Look, 4K) für noch hochwertigere Aufnahmen.'],
+      ['📈 Mehr Reichweite', 'Regelmäßiger Content & wachsende Community auf Instagram und TikTok.'],
     ],
   };
   </script>
@@ -313,6 +385,26 @@
             '<ul>'+(it.features||[]).map(function(f){return '<li>'+esc(f)+'</li>';}).join('')+'</ul>'+
             '<a class="btn '+(it.popular?'primary':'ghost')+'" href="#kontakt">Anfragen</a></div>';
         }).join('')+'</div></div>';
+    }).join('');
+
+    // Beispiele & Trends
+    var EX = C.EXAMPLES || [];
+    document.getElementById('examples').innerHTML = EX.map(function(e){
+      return '<a class="svc" href="'+esc(e.url)+'" target="_blank" rel="noopener" style="text-decoration:none;display:block">'+
+        '<div class="ic">▶️</div><h3>'+esc(e.title)+' ↗</h3><p>'+esc(e.desc)+'</p></a>';
+    }).join('');
+
+    // Equipment
+    var EQ = C.EQUIPMENT || {};
+    var li = function(arr){ return (arr||[]).map(function(x){return '<li>'+esc(x)+'</li>';}).join(''); };
+    document.getElementById('equipRecord').innerHTML = li(EQ.record);
+    document.getElementById('equipEdit').innerHTML = li(EQ.edit);
+    document.getElementById('equipAudio').innerHTML = li(EQ.audio);
+
+    // Ziele
+    var GO = C.GOALS || [];
+    document.getElementById('goals').innerHTML = GO.map(function(g){
+      return '<div class="goal"><h3>'+esc(g[0])+'</h3><p>'+esc(g[1])+'</p></div>';
     }).join('');
   })();
   </script>
