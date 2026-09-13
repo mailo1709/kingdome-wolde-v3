@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dein Video-Studio – Content, der den Daumen stoppt</title>
+  <title>Vortex Edits – Content, der den Daumen stoppt</title>
   <meta name="description" content="Videoschnitt & Content-Produktion für Reels, Shorts, TikTok und YouTube. Feste Pakete, klare Preise." />
   <style>
     :root{
@@ -168,9 +168,10 @@
         <div>© <span id="year"></span> · Alle Rechte vorbehalten</div>
       </div>
       <div class="impressum">
-        <strong>Impressum (bitte ausfüllen, in Deutschland Pflicht):</strong><br>
-        [Dein Name / Firmenname] · [Straße Nr.] · [PLZ Ort] · E-Mail: [deine@email.de] · Tel.: [Nummer]
-        <br>USt-IdNr./Steuernr.: [falls vorhanden]. Verantwortlich für den Inhalt gemäß § 55 Abs. 2 RStV: [Name].
+        <strong>Impressum</strong> (Name &amp; Adresse bitte noch ergänzen – in Deutschland Pflicht):<br>
+        [Dein Name / Firmenname] · [Straße Nr.] · [PLZ Ort]<br>
+        E-Mail: <a id="impEmail" href="#">–</a> · Instagram: <a id="impInsta" href="#" target="_blank" rel="noopener">–</a><br>
+        USt-IdNr./Steuernr.: [falls vorhanden]. Verantwortlich für den Inhalt gemäß § 55 Abs. 2 RStV: [Name].
       </div>
     </div>
   </footer>
@@ -187,12 +188,12 @@
        - instagram:  dein Instagram-Name OHNE @ (leer "" = Button wird ausgeblendet)
        ==================================================================== */
     CONTACT: {
-      email: 'deine@email.de',
-      instagram: 'deinusername',
+      email: 'u7135627@gmx.de',
+      instagram: 'vortex.edits',
     },
 
     STUDIO: {
-      name: 'Dein Video-Studio',
+      name: 'Vortex Edits',
       slogan: 'Content, der den Daumen stoppt.',
       about: 'Wir helfen Creators, Selbstständigen und kleinen Marken dabei, mit Videos aufzufallen – von der ersten Idee über den Dreh bis zum fertigen Schnitt. Ob Reels, Shorts, TikTok oder YouTube: schneller, sauberer Schnitt mit Hook, Untertiteln, Musik und dem richtigen Rhythmus, damit die Leute dranbleiben.',
       services: [
@@ -266,6 +267,15 @@
     var igBtn = document.getElementById('igBtn');
     if(CT.instagram){ var ig=String(CT.instagram).replace(/^@/,''); igBtn.href='https://instagram.com/'+ig; igBtn.style.display=''; }
     else { igBtn.style.display='none'; }
+
+    // Impressum: E-Mail & Instagram aus denselben CONTACT-Daten
+    var impE = document.getElementById('impEmail');
+    if(impE){ if(CT.email){ impE.textContent = CT.email; impE.href = 'mailto:'+CT.email; }
+      else { impE.textContent = '[E-Mail]'; impE.removeAttribute('href'); } }
+    var impI = document.getElementById('impInsta');
+    if(impI){ if(CT.instagram){ var ig3 = String(CT.instagram).replace(/^@/,'');
+        impI.textContent = '@'+ig3; impI.href = 'https://instagram.com/'+ig3; }
+      else { impI.textContent = '[Instagram]'; impI.removeAttribute('href'); } }
 
     document.getElementById('services').innerHTML = (S.services||[]).map(function(s){
       return '<div class="svc"><div class="ic">'+esc(s.icon)+'</div><h3>'+esc(s.title)+'</h3><p>'+esc(s.text)+'</p></div>';
