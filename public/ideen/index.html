@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Ideen – Content & Cut</title>
-  <meta name="description" content="Ideen sammeln, planen und bis zum fertigen Cut verfolgen." />
+  <meta name="description" content="Ideen sammeln, planen und bis zum fertigen Cut verfolgen – mit App-Guides, Glossar und kostenlosen Assets." />
   <link rel="manifest" href="manifest.webmanifest" />
   <meta name="theme-color" content="#7c3aed" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
@@ -23,14 +23,15 @@
     html,body{margin:0;background:var(--bg);color:var(--text);
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
       font-size:16px;line-height:1.4}
-    body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+    body{padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left)}
     button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
     input,select,textarea{font:inherit;color:var(--text);background:var(--bg2);
       border:1px solid var(--line);border-radius:12px;padding:11px 12px;width:100%}
     textarea{resize:vertical;min-height:90px}
     input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent2)}
-    .wrap{max-width:720px;margin:0 auto;padding:0 14px 120px}
-    header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,var(--bg) 70%,transparent);
+    a{color:var(--accent2)}
+    .wrap{max-width:720px;margin:0 auto;padding:0 14px calc(96px + env(safe-area-inset-bottom))}
+    header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,var(--bg) 78%,transparent);
       padding:14px 0 8px;backdrop-filter:blur(6px)}
     .topbar{display:flex;align-items:center;gap:10px}
     .logo{width:34px;height:34px;border-radius:9px;flex:0 0 auto;
@@ -64,10 +65,38 @@
     .linkbtn:active{opacity:.7}
     .empty{text-align:center;color:var(--muted);padding:60px 20px}
     .empty .big{font-size:44px}
-    .fab{position:fixed;right:18px;bottom:calc(20px + env(safe-area-inset-bottom));
+    .fab{position:fixed;right:18px;bottom:calc(80px + env(safe-area-inset-bottom));
       width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#4f46e5);
       color:#fff;font-size:32px;display:grid;place-items:center;z-index:30;
       box-shadow:0 8px 24px rgba(124,58,237,.5)}
+    /* content sections */
+    .intro{color:var(--muted);font-size:14px;margin:12px 0 14px;line-height:1.55}
+    .sectionhead{font-size:15px;font-weight:800;letter-spacing:.02em;margin:20px 0 9px;color:var(--text)}
+    .appsub{color:var(--muted);font-size:13.5px;margin:-4px 0 12px;line-height:1.5}
+    details.acc{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden}
+    details.acc>summary{list-style:none;cursor:pointer;padding:13px 14px;font-weight:650;
+      display:flex;gap:9px;align-items:center;font-size:15px}
+    details.acc>summary::-webkit-details-marker{display:none}
+    details.acc>summary::after{content:'▸';margin-left:auto;color:var(--muted);
+      transition:transform .15s;font-size:13px}
+    details.acc[open]>summary::after{transform:rotate(90deg)}
+    .accbody{padding:2px 15px 15px}
+    .accbody ol{margin:6px 0;padding-left:20px}
+    .accbody ol li{margin:6px 0;color:var(--text)}
+    .accbody ul{margin:6px 0;padding-left:18px}
+    .accbody ul li{margin:5px 0;color:var(--text)}
+    .tip{margin-top:11px;background:var(--card2);border:1px solid var(--line);border-radius:10px;
+      padding:9px 11px;font-size:13.5px;color:var(--muted);line-height:1.5}
+    .tip b{color:var(--accent2)}
+    .gdef{color:var(--text);font-size:14px;line-height:1.5}
+    .gwhere{color:var(--muted);font-size:13px;margin-top:8px;line-height:1.45}
+    .gwhere b{color:var(--accent2)}
+    .asset{display:block;text-decoration:none;background:var(--card);border:1px solid var(--line);
+      border-radius:13px;padding:12px 14px;margin-bottom:9px;color:var(--text)}
+    .asset:active{border-color:var(--accent2)}
+    .asset .an{font-weight:700;color:var(--accent2)}
+    .asset .ad{display:block;color:var(--muted);margin-top:3px;font-size:13px;line-height:1.45}
+    .catnote{color:var(--muted);font-size:13px;margin:2px 0 10px;line-height:1.45}
     /* modal */
     .overlay{position:fixed;inset:0;background:rgba(6,4,14,.72);z-index:40;
       display:none;align-items:flex-end;justify-content:center}
@@ -92,14 +121,21 @@
     .btn.danger{background:transparent;border:1px solid var(--danger);color:var(--danger)}
     .hint{font-size:12.5px;color:var(--muted);margin:6px 0 0;line-height:1.45}
     .hint a{color:var(--accent2)}
-    .syncstate{font-size:12px;color:var(--muted);margin-left:auto}
     .divider{height:1px;background:var(--line);margin:16px 0}
+    code{background:var(--card);padding:1px 5px;border-radius:5px;font-size:13px}
+    /* bottom nav */
+    .bottomnav{position:fixed;left:0;right:0;bottom:0;z-index:35;display:flex;
+      background:var(--bg2);border-top:1px solid var(--line);
+      padding-bottom:env(safe-area-inset-bottom)}
+    .navbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+      padding:9px 4px 8px;font-size:21px;color:var(--muted)}
+    .navbtn span{font-size:11px;font-weight:600}
+    .navbtn.active{color:var(--accent2)}
     .toast{position:fixed;left:50%;transform:translateX(-50%);
       bottom:calc(96px + env(safe-area-inset-bottom));background:#000;color:#fff;
       padding:10px 16px;border-radius:12px;font-size:14px;z-index:60;opacity:0;
       transition:opacity .2s;pointer-events:none;border:1px solid var(--line);max-width:90%}
     .toast.show{opacity:.96}
-    code{background:var(--card);padding:1px 5px;border-radius:5px;font-size:13px}
   </style>
 </head>
 <body>
@@ -107,18 +143,50 @@
     <header>
       <div class="topbar">
         <div class="logo">💡</div>
-        <h1>Ideen</h1>
+        <h1 id="viewTitle">Ideen</h1>
         <button class="iconbtn" id="btnBoost" title="Ideen-Booster">✨</button>
         <button class="iconbtn" id="btnSync" title="Jetzt synchronisieren">🔄</button>
         <button class="iconbtn" id="btnSettings" title="Einstellungen">⚙️</button>
       </div>
-      <input class="search" id="search" type="search" placeholder="Suchen …" autocomplete="off" />
-      <div class="tabs" id="tabs"></div>
+      <div id="ideenControls">
+        <input class="search" id="search" type="search" placeholder="Ideen suchen …" autocomplete="off" />
+        <div class="tabs" id="tabs"></div>
+      </div>
     </header>
-    <div class="list" id="list"></div>
+
+    <!-- IDEEN -->
+    <section id="viewIdeen"><div class="list" id="list"></div></section>
+
+    <!-- LERNEN -->
+    <section id="viewLernen" hidden>
+      <p class="intro">Schritt-für-Schritt-Anleitungen für die drei wichtigsten Schnittprogramme. Tippe eine Anleitung an, um sie aufzuklappen.</p>
+      <div class="tabs" id="appTabs"></div>
+      <div id="appSub" class="appsub"></div>
+      <div id="guideList"></div>
+    </section>
+
+    <!-- GLOSSAR -->
+    <section id="viewGlossar" hidden>
+      <p class="intro">Wörter oder Symbole, die du nicht kennst? Hier kurz erklärt – inklusive „wo finde ich das in der App".</p>
+      <input class="search" id="glossarSearch" type="search" placeholder="Begriff suchen (z.B. Keyframe, LUT, Hook) …" autocomplete="off" />
+      <div id="glossarList" style="margin-top:12px"></div>
+    </section>
+
+    <!-- ASSETS -->
+    <section id="viewAssets" hidden>
+      <p class="intro">Kostenlose Musik, Soundeffekte, Bilder, Videos & Schriften. Alles legal nutzbar – <b>Lizenzhinweis pro Datei beachten</b> (manche wollen eine Namensnennung).</p>
+      <div id="assetsList"></div>
+    </section>
   </div>
 
   <button class="fab" id="fab" aria-label="Neue Idee">+</button>
+
+  <nav class="bottomnav" id="bottomnav">
+    <button class="navbtn active" data-view="ideen">💡<span>Ideen</span></button>
+    <button class="navbtn" data-view="lernen">🎓<span>Lernen</span></button>
+    <button class="navbtn" data-view="glossar">📖<span>Glossar</span></button>
+    <button class="navbtn" data-view="assets">🎵<span>Assets</span></button>
+  </nav>
 
   <!-- Editor -->
   <div class="overlay" id="editorOverlay">
@@ -209,10 +277,12 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="content.js"></script>
   <script>
   (function(){
     "use strict";
     const $ = (s)=>document.querySelector(s);
+    const C = window.APP_CONTENT || {GUIDES:[],GLOSSARY:[],ASSETS:[]};
     const LS = {
       ideas:'ideen_data', token:'ideen_gh_token', gist:'ideen_gist_id', auto:'ideen_autosync'
     };
@@ -228,6 +298,8 @@
     let ideas = load();
     let filter = 'alle';
     let query = '';
+    let view = 'ideen';
+    let currentApp = (C.GUIDES[0]||{}).key || '';
     let editingId = null;
     let editStar = 0, editStage = 'idee';
 
@@ -246,7 +318,28 @@
     }
     const active = ()=> ideas.filter(i=>!i.deleted);
 
-    // ---------- Render ----------
+    // ---------- View switching ----------
+    const VIEWS = {
+      ideen:{title:'Ideen', el:'#viewIdeen'},
+      lernen:{title:'Lernen', el:'#viewLernen'},
+      glossar:{title:'Glossar', el:'#viewGlossar'},
+      assets:{title:'Assets', el:'#viewAssets'},
+    };
+    function setView(v){
+      view = v;
+      Object.keys(VIEWS).forEach(k=>{ $(VIEWS[k].el).hidden = (k!==v); });
+      $('#viewTitle').textContent = VIEWS[v].title;
+      $('#ideenControls').hidden = (v!=='ideen');
+      $('#fab').style.display = (v==='ideen') ? 'grid' : 'none';
+      document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+      try{ if(('#'+v)!==location.hash) history.replaceState(null,'','#'+v); }catch(e){}
+      if(v==='lernen') renderGuides();
+      if(v==='glossar') renderGlossar();
+      if(v==='assets') renderAssets();
+      window.scrollTo(0,0);
+    }
+
+    // ---------- Ideen: Render ----------
     function renderTabs(){
       const counts = {alle: active().length};
       STAGES.forEach(s=> counts[s.key]=active().filter(i=>i.stage===s.key).length);
@@ -256,7 +349,6 @@
       ).join('');
       $('#tabs').querySelectorAll('.tab').forEach(b=>b.onclick=()=>{filter=b.dataset.tab;renderTabs();renderList();});
     }
-
     function renderList(){
       let items = active();
       if(filter!=='alle') items = items.filter(i=>i.stage===filter);
@@ -297,8 +389,55 @@
         c.onclick=()=>openEditor(c.dataset.id);
       });
     }
+    function renderIdeen(){ renderTabs(); renderList(); }
 
-    function renderAll(){ renderTabs(); renderList(); }
+    // ---------- Lernen: Guides ----------
+    function renderGuides(){
+      $('#appTabs').innerHTML = C.GUIDES.map(g=>
+        `<button class="tab ${g.key===currentApp?'active':''}" data-app="${g.key}">${g.icon} ${esc(g.name)}</button>`
+      ).join('');
+      $('#appTabs').querySelectorAll('.tab').forEach(b=>b.onclick=()=>{currentApp=b.dataset.app;renderGuides();});
+      const g = C.GUIDES.find(x=>x.key===currentApp) || C.GUIDES[0];
+      if(!g){ $('#guideList').innerHTML=''; return; }
+      $('#appSub').textContent = g.subtitle || '';
+      $('#guideList').innerHTML = g.items.map(it=>{
+        const isList = /Symbole/.test(it.t);
+        const body = isList
+          ? `<ul>${it.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>`
+          : `<ol>${it.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>`;
+        return `<details class="acc"><summary>${esc(it.t)}</summary>
+          <div class="accbody">${body}
+          ${it.tip?`<div class="tip"><b>Tipp:</b> ${esc(it.tip)}</div>`:''}</div></details>`;
+      }).join('');
+    }
+
+    // ---------- Glossar ----------
+    function renderGlossar(){
+      const q=($('#glossarSearch').value||'').trim().toLowerCase();
+      let items = C.GLOSSARY.slice();
+      if(q) items = items.filter(g=> g.term.toLowerCase().includes(q) || (g.def||'').toLowerCase().includes(q));
+      items.sort((a,b)=>a.term.localeCompare(b.term,'de'));
+      $('#glossarList').innerHTML = items.length ? items.map(g=>
+        `<details class="acc"><summary>${esc(g.term)}</summary>
+          <div class="accbody">
+            <div class="gdef">${esc(g.def)}</div>
+            ${g.where?`<div class="gwhere"><b>In der App:</b> ${esc(g.where)}</div>`:''}
+          </div></details>`
+      ).join('') : `<div class="empty"><div class="big">🔍</div><p>Kein Begriff gefunden.</p></div>`;
+    }
+
+    // ---------- Assets ----------
+    function renderAssets(){
+      $('#assetsList').innerHTML = C.ASSETS.map(cat=>
+        `<div class="sectionhead">${esc(cat.cat)}</div>
+         ${cat.note?`<div class="catnote">${esc(cat.note)}</div>`:''}
+         ${cat.items.map(a=>
+           `<a class="asset" href="${esc(a.url)}" target="_blank" rel="noopener">
+              <span class="an">${esc(a.name)} ↗</span>
+              <span class="ad">${esc(a.desc)}</span>
+            </a>`).join('')}`
+      ).join('');
+    }
 
     // ---------- Editor ----------
     function buildStagePicker(){
@@ -348,7 +487,7 @@
         ideas.push({id:uid(),title,platform:$('#fPlatform').value,notes,tags,link,
           priority:editStar,stage:editStage,createdAt:now,updatedAt:now,deleted:false});
       }
-      save(); renderAll(); closeSheet('#editorOverlay'); toast('Gespeichert');
+      save(); renderIdeen(); closeSheet('#editorOverlay'); toast('Gespeichert');
       maybeAutoSync();
     }
     function deleteEditor(){
@@ -356,7 +495,7 @@
       if(!confirm('Diese Idee wirklich löschen?')) return;
       const it=ideas.find(x=>x.id===editingId);
       if(it){ it.deleted=true; it.updatedAt=Date.now(); }
-      save(); renderAll(); closeSheet('#editorOverlay'); toast('Gelöscht');
+      save(); renderIdeen(); closeSheet('#editorOverlay'); toast('Gelöscht');
       maybeAutoSync();
     }
 
@@ -380,7 +519,7 @@
         if(!cur || (r.updatedAt||0) > (cur.updatedAt||0)){ map[r.id]=r; changed=true; }
       });
       ideas = Object.values(map);
-      if(changed){ save(); renderAll(); }
+      if(changed){ save(); if(view==='ideen') renderIdeen(); }
       return changed;
     }
 
@@ -390,7 +529,6 @@
       setStatus('Synchronisiere …');
       try{
         let gid=getGistId();
-        // 1) Pull + merge
         if(gid){
           const res=await fetch('https://api.github.com/gists/'+gid,{headers:ghHeaders()});
           if(res.status===404){ localStorage.removeItem(LS.gist); gid=''; }
@@ -405,14 +543,11 @@
             }
           }
         }
-        // 2) Push merged state
-        const body=JSON.stringify({
-          description:'Ideen-App Daten',
-          files:{[GIST_FILE]:{content:JSON.stringify(ideas,null,2)}}
-        });
         let res2, out;
         if(gid){
-          res2=await fetch('https://api.github.com/gists/'+gid,{method:'PATCH',headers:ghHeaders(),body});
+          res2=await fetch('https://api.github.com/gists/'+gid,{method:'PATCH',headers:ghHeaders(),
+            body:JSON.stringify({description:'Ideen-App Daten',
+              files:{[GIST_FILE]:{content:JSON.stringify(ideas,null,2)}}})});
         }else{
           res2=await fetch('https://api.github.com/gists',{method:'POST',headers:ghHeaders(),
             body:JSON.stringify({description:'Ideen-App Daten',public:false,
@@ -453,13 +588,13 @@
         try{
           const arr=JSON.parse(r.result);
           if(!Array.isArray(arr)) throw 0;
-          mergeRemote(arr); renderAll(); toast('Import: '+arr.length+' Einträge zusammengeführt');
+          mergeRemote(arr); renderIdeen(); toast('Import: '+arr.length+' Einträge zusammengeführt');
         }catch(e){ toast('Import fehlgeschlagen – ungültige Datei'); }
       };
       r.readAsText(file);
     }
 
-    // ---------- Seed (Beispiel-Ideen + Wissen beim ersten Start) ----------
+    // ---------- Seed (Beispiel-Ideen beim ersten Start) ----------
     function seedIfEmpty(){
       try{
         if(localStorage.getItem('ideen_seeded')==='1') return;
@@ -477,13 +612,9 @@
         mk({t:'YouTube: Mein mobiles Editing-Setup 2026',p:'YouTube',s:'idee',n:'Handy, Gimbal, Mikro, CapCut – was brauche ich wirklich?',tg:['setup']}),
         mk({t:'TikTok: Trend-Sound + schneller Schnitt',p:'TikTok',s:'idee',n:'Aktuellen Trend-Sound raussuchen und auf den Beat schneiden.',tg:['trend']}),
         mk({t:'📚 J-Cut & L-Cut',s:'idee',n:'Ton läuft über den Schnitt hinaus (L-Cut) oder der Ton der nächsten Szene startet früher (J-Cut). Macht Übergänge weich und professionell.',tg:['wissen'],l:yt('j cut l cut erklärt deutsch')}),
-        mk({t:'📚 Jump Cut – Tempo & Energie',s:'idee',n:'Kleine Sprünge im selben Bild → Pausen raus, Energie rein. Perfekt für Talking-Head.',tg:['wissen'],l:yt('jump cut tutorial deutsch')}),
         mk({t:'📚 Speed Ramp',s:'idee',pr:1,n:'Von Zeitlupe schnell auf normal/schnell rampen, auf Bewegung oder Beat. In CapCut: „Kurve" bei Geschwindigkeit.',tg:['wissen'],l:tt('speed ramp capcut tutorial')}),
-        mk({t:'📚 Match Cut',s:'idee',n:'Zwei Szenen über gleiche Form/Bewegung nahtlos verbinden. Wirkt magisch und hält Zuschauer.',tg:['wissen'],l:yt('match cut tutorial')}),
         mk({t:'📚 Der Hook (erste 3 Sekunden)',s:'idee',pr:1,n:'Starte mit Aussage, Frage oder Bewegung – kein langes Intro. Entscheidet über die Reichweite.',tg:['wissen'],l:yt('video hook erste 3 sekunden')}),
-        mk({t:'📚 B-Roll richtig einsetzen',s:'idee',n:'Zwischenschnitte, die das Gesagte zeigen. Deckt harte Schnitte ab und macht das Video lebendig.',tg:['wissen'],l:yt('b-roll tutorial deutsch')}),
-        mk({t:'📚 Beat-Sync – auf den Takt schneiden',s:'idee',n:'Cuts auf den Beat der Musik legen. In CapCut Beats automatisch markieren, dann schneiden.',tg:['wissen'],l:tt('beat sync edit capcut')}),
-        mk({t:'📚 CapCut Basics (mobiler Schnitt)',s:'idee',n:'Kostenlos auf Handy/iPad – perfekt für Reels, Shorts & TikTok. Grundlagen einmal durchgehen.',tg:['wissen'],l:yt('capcut tutorial für anfänger deutsch')}),
+        mk({t:'📚 CapCut Basics (mobiler Schnitt)',s:'idee',n:'Kostenlos auf Handy/iPad – perfekt für Reels, Shorts & TikTok. Siehe Tab „Lernen".',tg:['wissen'],l:yt('capcut tutorial für anfänger deutsch')}),
       ];
       save();
       try{ localStorage.setItem('ideen_seeded','1'); }catch(e){}
@@ -502,6 +633,7 @@
     const pick=(a)=>a[Math.floor(Math.random()*a.length)];
     function boost(){
       const f=pick(BOOST.formats),t=pick(BOOST.topics),h=pick(BOOST.hooks);
+      if(view!=='ideen') setView('ideen');
       openEditor(null);
       $('#fTitle').value=f+': '+t;
       $('#fPlatform').value=f;
@@ -514,15 +646,19 @@
     // ---------- Wire up ----------
     buildStagePicker();
     seedIfEmpty();
-    renderAll();
-    $('#btnBoost').onclick=boost;
+    renderIdeen();
+    const startView = (location.hash||'').replace('#','');
+    setView(VIEWS[startView] ? startView : 'ideen');
 
+    document.querySelectorAll('.navbtn').forEach(b=>b.onclick=()=>setView(b.dataset.view));
     $('#fab').onclick=()=>openEditor(null);
+    $('#btnBoost').onclick=boost;
     $('#editSave').onclick=saveEditor;
     $('#editCancel').onclick=()=>closeSheet('#editorOverlay');
     $('#editDelete').onclick=deleteEditor;
     $('#fStarBtn').onclick=()=>{ editStar=editStar?0:1; paintStar(); };
     $('#search').oninput=(e)=>{ query=e.target.value.trim(); renderList(); };
+    $('#glossarSearch').oninput=renderGlossar;
 
     $('#btnSettings').onclick=()=>{
       $('#sToken').value=getToken();
@@ -548,17 +684,14 @@
     $('#btnImport').onclick=()=>$('#importFile').click();
     $('#importFile').onchange=(e)=>{ if(e.target.files[0]) importJson(e.target.files[0]); e.target.value=''; };
 
-    // close sheet on backdrop tap
     document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{
       if(e.target===o) o.classList.remove('open');
     }));
 
-    // auto-sync on start if configured
     if(localStorage.getItem(LS.auto)==='1' && getToken() && getGistId()){
       setTimeout(()=>syncNow(true),600);
     }
 
-    // service worker
     if('serviceWorker' in navigator){
       window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
     }
