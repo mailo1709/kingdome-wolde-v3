@@ -1,5 +1,5 @@
 // Service Worker für die Ideen-App (offline-fähig, PWA-Installation)
-const CACHE = 'ideen-v7';
+const CACHE = 'ideen-v8';
 const ASSETS = [
   './',
   './index.html',
