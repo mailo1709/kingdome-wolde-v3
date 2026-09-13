@@ -20,6 +20,7 @@
       --radius:16px;
     }
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    [hidden]{display:none!important}
     html,body{margin:0;background:var(--bg);color:var(--text);
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
       font-size:16px;line-height:1.4}
@@ -136,6 +137,50 @@
       padding:10px 16px;border-radius:12px;font-size:14px;z-index:60;opacity:0;
       transition:opacity .2s;pointer-events:none;border:1px solid var(--line);max-width:90%}
     .toast.show{opacity:.96}
+    /* dashboard */
+    .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
+    .kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px}
+    .kpi .num{font-size:26px;font-weight:800;line-height:1}
+    .kpi .lbl{color:var(--muted);font-size:12.5px;margin-top:5px;font-weight:600}
+    .sbar{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+    .sbar .snm{width:96px;flex:0 0 auto;font-size:13.5px;font-weight:600}
+    .sbar .strack{flex:1;height:12px;border-radius:8px;background:var(--card2);overflow:hidden;border:1px solid var(--line)}
+    .sbar .sfill{height:100%;border-radius:8px}
+    .sbar .scnt{width:26px;text-align:right;color:var(--muted);font-size:13px;font-weight:700}
+    /* calendar agenda */
+    .calgroup{margin-top:12px}
+    .calgroup .cghd{font-size:13px;font-weight:800;color:var(--accent2);margin-bottom:7px}
+    .calgroup .cghd.over{color:var(--danger)}
+    .calrow{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);
+      border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer}
+    .calrow .cdate{flex:0 0 auto;text-align:center;min-width:44px}
+    .calrow .cdate .cd{font-size:18px;font-weight:800;line-height:1}
+    .calrow .cdate .cm{font-size:11px;color:var(--muted);text-transform:uppercase}
+    .calrow .cinfo{flex:1;min-width:0}
+    .calrow .cinfo .ct{font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .calrow .cinfo .cs{font-size:12px;color:var(--muted);margin-top:2px}
+    .caldot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+    /* checklist */
+    .chkbadge{display:inline-block;margin-top:10px;margin-right:6px;font-size:12px;font-weight:700;
+      color:var(--good);background:var(--card2);border:1px solid var(--line);padding:3px 9px;border-radius:999px}
+    .datebadge{display:inline-block;margin-top:10px;font-size:12px;font-weight:700;
+      color:var(--accent2);background:var(--card2);border:1px solid var(--line);padding:3px 9px;border-radius:999px}
+    .checklist .ci{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+    .checklist .ci input[type=checkbox]{width:auto;transform:scale(1.25);flex:0 0 auto}
+    .checklist .ci input[type=text]{flex:1}
+    .checklist .ci .del{flex:0 0 auto;color:var(--muted);font-size:18px;padding:0 4px}
+    /* teleprompter */
+    .tele{position:fixed;inset:0;z-index:70;background:#000;display:flex;flex-direction:column}
+    .teleScrollWrap{flex:1;overflow:hidden;position:relative}
+    .teleScrollWrap::before{content:'';position:absolute;left:0;right:0;top:38%;height:2px;
+      background:rgba(255,80,80,.55);z-index:2;pointer-events:none}
+    .teleText{color:#fff;font-size:34px;line-height:1.5;font-weight:600;
+      padding:60vh 22px;white-space:pre-wrap;will-change:transform}
+    .teleControls{display:flex;gap:6px;justify-content:center;align-items:center;
+      padding:10px 8px calc(14px + env(safe-area-inset-bottom));background:#0c0c12;border-top:1px solid #222}
+    .teleControls button{background:#1c1c26;color:#fff;border:1px solid #33333f;border-radius:11px;
+      min-width:46px;height:46px;font-size:16px;font-weight:700}
+    .teleControls #telePlay{background:var(--accent);border-color:var(--accent);min-width:64px}
   </style>
 </head>
 <body>
@@ -156,6 +201,16 @@
 
     <!-- IDEEN -->
     <section id="viewIdeen"><div class="list" id="list"></div></section>
+
+    <!-- ÜBERSICHT (Dashboard + Content-Kalender) -->
+    <section id="viewUebersicht" hidden>
+      <div class="kpis" id="kpis"></div>
+      <div class="sectionhead">Pipeline</div>
+      <div id="stageBars"></div>
+      <div class="sectionhead">📅 Content-Kalender</div>
+      <p class="catnote">Gib Ideen im Editor ein Datum, dann erscheinen sie hier geplant.</p>
+      <div id="calendar"></div>
+    </section>
 
     <!-- LERNEN -->
     <section id="viewLernen" hidden>
@@ -183,6 +238,7 @@
 
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn active" data-view="ideen">💡<span>Ideen</span></button>
+    <button class="navbtn" data-view="uebersicht">📊<span>Übersicht</span></button>
     <button class="navbtn" data-view="lernen">🎓<span>Lernen</span></button>
     <button class="navbtn" data-view="glossar">📖<span>Glossar</span></button>
     <button class="navbtn" data-view="assets">🎵<span>Assets</span></button>
@@ -218,9 +274,28 @@
         <label>Phase</label>
         <div class="stagepick" id="fStages"></div>
       </div>
+      <div class="field two">
+        <div>
+          <label>Post-Datum (für Kalender)</label>
+          <input id="fDate" type="date" />
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <button class="btn ghost" id="fClearDate" type="button" style="padding:11px">Datum löschen</button>
+        </div>
+      </div>
       <div class="field">
         <label>Notizen / Skript / Hook</label>
         <textarea id="fNotes" placeholder="Idee, Hook, Ablauf, Schnitt-Notizen …"></textarea>
+        <button class="btn ghost" id="fTeleprompter" type="button" style="margin-top:8px">🎬 Als Teleprompter abspielen</button>
+      </div>
+      <div class="field">
+        <label>Checkliste</label>
+        <div id="fChecklist" class="checklist"></div>
+        <div class="btnrow" style="margin-top:8px">
+          <button class="btn ghost" id="fAddCheck" type="button" style="padding:10px">＋ Punkt</button>
+          <button class="btn ghost" id="fDefaultCheck" type="button" style="padding:10px">Standard-Schritte</button>
+        </div>
       </div>
       <div class="field">
         <label>Link (YouTube / TikTok / Referenz)</label>
@@ -277,6 +352,20 @@
 
   <div class="toast" id="toast"></div>
 
+  <!-- Teleprompter -->
+  <div id="teleOverlay" class="tele" hidden>
+    <div class="teleScrollWrap" id="teleWrap"><div class="teleText" id="teleText"></div></div>
+    <div class="teleControls">
+      <button id="teleClose" title="Schließen">✕</button>
+      <button id="teleSlower" title="Langsamer">🐢</button>
+      <button id="telePlay" title="Start/Pause">▶</button>
+      <button id="teleFaster" title="Schneller">🐇</button>
+      <button id="teleFontDn" title="Kleiner">A−</button>
+      <button id="teleFontUp" title="Größer">A＋</button>
+      <button id="teleRestart" title="Von vorn">↺</button>
+    </div>
+  </div>
+
   <script src="content.js"></script>
   <script>
   (function(){
@@ -317,10 +406,16 @@
       clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2200);
     }
     const active = ()=> ideas.filter(i=>!i.deleted);
+    function fmtDate(iso){ try{ const d=new Date(iso+'T00:00:00');
+      return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'}); }catch(e){ return iso; } }
+    const DEFAULT_CHECK=['Idee finalisieren','Skript / Hook schreiben','Drehen','Schneiden',
+      'Untertitel','Thumbnail / Cover','Musik & Sound','Hochladen / Posten'];
+    let editChecklist=[]; // Arbeitskopie im Editor
 
     // ---------- View switching ----------
     const VIEWS = {
       ideen:{title:'Ideen', el:'#viewIdeen'},
+      uebersicht:{title:'Übersicht', el:'#viewUebersicht'},
       lernen:{title:'Lernen', el:'#viewLernen'},
       glossar:{title:'Glossar', el:'#viewGlossar'},
       assets:{title:'Assets', el:'#viewAssets'},
@@ -333,10 +428,85 @@
       $('#fab').style.display = (v==='ideen') ? 'grid' : 'none';
       document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
       try{ if(('#'+v)!==location.hash) history.replaceState(null,'','#'+v); }catch(e){}
+      if(v==='uebersicht') renderUebersicht();
       if(v==='lernen') renderGuides();
       if(v==='glossar') renderGlossar();
       if(v==='assets') renderAssets();
       window.scrollTo(0,0);
+    }
+
+    // ---------- Übersicht: Dashboard + Kalender ----------
+    const MONTHS=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    function chkProgress(i){
+      const cl=i.checklist||[]; const done=cl.filter(c=>c.done).length;
+      return {done, total:cl.length};
+    }
+    function activityStreak(){
+      const days=new Set();
+      active().forEach(i=>{ [i.createdAt,i.updatedAt].forEach(t=>{ if(t) days.add(new Date(t).toDateString()); }); });
+      let streak=0; const d=new Date();
+      // erlaubt Start heute oder gestern
+      if(!days.has(d.toDateString())) d.setDate(d.getDate()-1);
+      while(days.has(d.toDateString())){ streak++; d.setDate(d.getDate()-1); }
+      return streak;
+    }
+    function renderUebersicht(){
+      const all=active();
+      const inArbeit=all.filter(i=>['skript','drehen','schnitt'].includes(i.stage)).length;
+      const fertig=all.filter(i=>i.stage==='fertig').length;
+      const now=new Date(), ym=now.getFullYear()+'-'+now.getMonth();
+      const fertigMonat=all.filter(i=>i.stage==='fertig' &&
+        (new Date(i.updatedAt).getFullYear()+'-'+new Date(i.updatedAt).getMonth())===ym).length;
+      const kpis=[
+        {num:all.length,lbl:'Ideen gesamt'},
+        {num:inArbeit,lbl:'In Arbeit'},
+        {num:fertigMonat,lbl:'Fertig diesen Monat'},
+        {num:'🔥 '+activityStreak(),lbl:'Aktiv-Streak (Tage)'},
+      ];
+      $('#kpis').innerHTML=kpis.map(k=>`<div class="kpi"><div class="num">${esc(String(k.num))}</div><div class="lbl">${esc(k.lbl)}</div></div>`).join('');
+      // stage bars
+      const max=Math.max(1, ...STAGES.map(s=>all.filter(i=>i.stage===s.key).length));
+      $('#stageBars').innerHTML=STAGES.map(s=>{
+        const c=all.filter(i=>i.stage===s.key).length;
+        return `<div class="sbar"><div class="snm">${esc(s.label)}</div>
+          <div class="strack"><div class="sfill" style="width:${Math.round(c/max*100)}%;background:${s.color}"></div></div>
+          <div class="scnt">${c}</div></div>`;
+      }).join('');
+      renderCalendar();
+    }
+    function startOfDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
+    function renderCalendar(){
+      const dated=active().filter(i=>i.date).sort((a,b)=>a.date.localeCompare(b.date));
+      if(!dated.length){ $('#calendar').innerHTML=`<div class="empty"><div class="big">📅</div><p>Noch keine Idee mit Datum.</p></div>`; return; }
+      const today=startOfDay(new Date());
+      const weekEnd=new Date(today); weekEnd.setDate(weekEnd.getDate()+7);
+      const groups={over:[],today:[],week:[],later:[]};
+      dated.forEach(i=>{
+        const d=startOfDay(i.date+'T00:00:00');
+        if(i.stage!=='fertig' && d<today) groups.over.push(i);
+        else if(d.getTime()===today.getTime()) groups.today.push(i);
+        else if(d<weekEnd) groups.week.push(i);
+        else groups.later.push(i);
+      });
+      const secs=[
+        {k:'over',t:'⚠️ Überfällig',cls:'over'},
+        {k:'today',t:'Heute'},
+        {k:'week',t:'Diese Woche'},
+        {k:'later',t:'Später'},
+      ];
+      $('#calendar').innerHTML=secs.filter(s=>groups[s.k].length).map(s=>
+        `<div class="calgroup"><div class="cghd ${s.cls||''}">${esc(s.t)}</div>
+        ${groups[s.k].map(i=>{
+          const d=new Date(i.date+'T00:00:00'); const st=stageOf(i.stage);
+          const p=chkProgress(i);
+          return `<div class="calrow" data-id="${i.id}">
+            <div class="cdate"><div class="cd">${d.getDate()}</div><div class="cm">${MONTHS[d.getMonth()]}</div></div>
+            <div class="cinfo"><div class="ct">${esc(i.title||'Ohne Titel')}</div>
+              <div class="cs">${esc(st.label)}${i.platform?' · '+esc(i.platform):''}${p.total?' · ✅ '+p.done+'/'+p.total:''}</div></div>
+            <div class="caldot" style="background:${st.color}"></div></div>`;
+        }).join('')}</div>`
+      ).join('');
+      $('#calendar').querySelectorAll('.calrow').forEach(r=>r.onclick=()=>openEditor(r.dataset.id));
     }
 
     // ---------- Ideen: Render ----------
@@ -381,6 +551,10 @@
           </div>
           ${i.notes?`<div class="notes">${esc(i.notes.length>180?i.notes.slice(0,180)+'…':i.notes)}</div>`:''}
           ${tags.length?`<div class="tagline">${tags.map(t=>`<span class="tag">#${esc(t)}</span>`).join('')}</div>`:''}
+          <div>
+            ${i.date?`<span class="datebadge">📅 ${esc(fmtDate(i.date))}</span> `:''}
+            ${(()=>{const p=chkProgress(i);return p.total?`<span class="chkbadge">✅ ${p.done}/${p.total}</span>`:'';})()}
+          </div>
           ${i.link?`<a class="linkbtn" href="${esc(i.link)}" target="_blank" rel="noopener" data-stop="1">▶ Ansehen</a>`:''}
         </div>`;
       }).join('');
@@ -456,6 +630,19 @@
     }
     function paintStar(){ $('#fStarBtn').textContent = editStar?'⭐':'☆'; }
 
+    function renderChecklistEditor(){
+      const el=$('#fChecklist');
+      el.innerHTML = editChecklist.map((c,idx)=>
+        `<div class="ci">
+          <input type="checkbox" data-i="${idx}" ${c.done?'checked':''} />
+          <input type="text" data-t="${idx}" value="${esc(c.text)}" placeholder="Aufgabe …" />
+          <button type="button" class="del" data-d="${idx}" title="Entfernen">✕</button>
+        </div>`).join('') || '<p class="hint" style="margin:0">Keine Punkte. „Standard-Schritte" oder „＋ Punkt".</p>';
+      el.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.onchange=()=>{editChecklist[+cb.dataset.i].done=cb.checked;});
+      el.querySelectorAll('input[type=text]').forEach(tx=>tx.oninput=()=>{editChecklist[+tx.dataset.t].text=tx.value;});
+      el.querySelectorAll('.del').forEach(b=>b.onclick=()=>{editChecklist.splice(+b.dataset.d,1);renderChecklistEditor();});
+    }
+
     function openEditor(id){
       editingId = id || null;
       const it = id ? ideas.find(x=>x.id===id) : null;
@@ -463,8 +650,11 @@
       $('#fTitle').value = it?.title || '';
       $('#fPlatform').value = it?.platform || '';
       $('#fNotes').value = it?.notes || '';
+      $('#fDate').value = it?.date || '';
       $('#fLink').value = it?.link || '';
       $('#fTags').value = (it?.tags||[]).join(', ');
+      editChecklist = (it?.checklist||[]).map(c=>({text:c.text,done:!!c.done}));
+      renderChecklistEditor();
       editStar = it?.priority ? 1 : 0;
       editStage = it?.stage || (filter!=='alle'?filter:'idee');
       paintStar(); paintStagePicker();
@@ -478,16 +668,19 @@
       if(!title && !notes){ toast('Bitte Titel oder Notiz eingeben'); return; }
       const tags=$('#fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
       const link=$('#fLink').value.trim();
+      const date=$('#fDate').value||'';
+      const checklist=editChecklist.filter(c=>(c.text||'').trim()).map(c=>({text:c.text.trim(),done:!!c.done}));
       const now=Date.now();
       if(editingId){
         const it=ideas.find(x=>x.id===editingId);
-        Object.assign(it,{title,platform:$('#fPlatform').value,notes,tags,link,
+        Object.assign(it,{title,platform:$('#fPlatform').value,notes,tags,link,date,checklist,
           priority:editStar,stage:editStage,updatedAt:now});
       }else{
-        ideas.push({id:uid(),title,platform:$('#fPlatform').value,notes,tags,link,
+        ideas.push({id:uid(),title,platform:$('#fPlatform').value,notes,tags,link,date,checklist,
           priority:editStar,stage:editStage,createdAt:now,updatedAt:now,deleted:false});
       }
-      save(); renderIdeen(); closeSheet('#editorOverlay'); toast('Gespeichert');
+      save(); renderIdeen(); if(view==='uebersicht') renderUebersicht();
+      closeSheet('#editorOverlay'); toast('Gespeichert');
       maybeAutoSync();
     }
     function deleteEditor(){
@@ -495,7 +688,8 @@
       if(!confirm('Diese Idee wirklich löschen?')) return;
       const it=ideas.find(x=>x.id===editingId);
       if(it){ it.deleted=true; it.updatedAt=Date.now(); }
-      save(); renderIdeen(); closeSheet('#editorOverlay'); toast('Gelöscht');
+      save(); renderIdeen(); if(view==='uebersicht') renderUebersicht();
+      closeSheet('#editorOverlay'); toast('Gelöscht');
       maybeAutoSync();
     }
 
@@ -643,6 +837,33 @@
       toast('Neuer Vorschlag ✨ – anpassen & speichern');
     }
 
+    // ---------- Teleprompter ----------
+    let teleY=0, teleSpeed=60, teleRun=false, teleRAF=null, teleLast=0, teleFont=34;
+    function teleFrame(ts){
+      if(!teleRun) return;
+      if(!teleLast) teleLast=ts;
+      const dt=(ts-teleLast)/1000; teleLast=ts;
+      teleY += teleSpeed*dt;
+      const wrap=$('#teleWrap'), txt=$('#teleText');
+      const maxY = txt.scrollHeight - 40;
+      if(teleY>maxY){ teleY=maxY; teleRun=false; $('#telePlay').textContent='▶'; }
+      txt.style.transform='translateY('+(-teleY)+'px)';
+      teleRAF=requestAnimationFrame(teleFrame);
+    }
+    function openTele(text){
+      $('#teleText').textContent = text || 'Kein Text vorhanden.';
+      $('#teleText').style.fontSize = teleFont+'px';
+      teleY=0; teleLast=0; teleRun=false;
+      $('#teleText').style.transform='translateY(0)';
+      $('#telePlay').textContent='▶';
+      $('#teleOverlay').hidden=false;
+    }
+    function teleToggle(){
+      teleRun=!teleRun; $('#telePlay').textContent=teleRun?'⏸':'▶';
+      if(teleRun){ teleLast=0; teleRAF=requestAnimationFrame(teleFrame); }
+    }
+    function teleClose(){ teleRun=false; if(teleRAF) cancelAnimationFrame(teleRAF); $('#teleOverlay').hidden=true; }
+
     // ---------- Wire up ----------
     buildStagePicker();
     seedIfEmpty();
@@ -659,6 +880,26 @@
     $('#fStarBtn').onclick=()=>{ editStar=editStar?0:1; paintStar(); };
     $('#search').oninput=(e)=>{ query=e.target.value.trim(); renderList(); };
     $('#glossarSearch').oninput=renderGlossar;
+    $('#fClearDate').onclick=()=>{ $('#fDate').value=''; };
+    $('#fAddCheck').onclick=()=>{ editChecklist.push({text:'',done:false}); renderChecklistEditor();
+      const inputs=$('#fChecklist').querySelectorAll('input[type=text]'); if(inputs.length) inputs[inputs.length-1].focus(); };
+    $('#fDefaultCheck').onclick=()=>{
+      const have=new Set(editChecklist.map(c=>c.text));
+      DEFAULT_CHECK.forEach(t=>{ if(!have.has(t)) editChecklist.push({text:t,done:false}); });
+      renderChecklistEditor();
+    };
+    $('#fTeleprompter').onclick=()=>{
+      const t=$('#fTitle').value.trim(), n=$('#fNotes').value.trim();
+      if(!t && !n){ toast('Erst Notizen/Skript eingeben'); return; }
+      openTele((t?t+'\n\n':'')+n);
+    };
+    $('#teleClose').onclick=teleClose;
+    $('#telePlay').onclick=teleToggle;
+    $('#teleFaster').onclick=()=>{ teleSpeed=Math.min(240,teleSpeed+20); toast('Tempo: '+teleSpeed); };
+    $('#teleSlower').onclick=()=>{ teleSpeed=Math.max(20,teleSpeed-20); toast('Tempo: '+teleSpeed); };
+    $('#teleFontUp').onclick=()=>{ teleFont=Math.min(72,teleFont+4); $('#teleText').style.fontSize=teleFont+'px'; };
+    $('#teleFontDn').onclick=()=>{ teleFont=Math.max(18,teleFont-4); $('#teleText').style.fontSize=teleFont+'px'; };
+    $('#teleRestart').onclick=()=>{ teleY=0; $('#teleText').style.transform='translateY(0)'; };
 
     $('#btnSettings').onclick=()=>{
       $('#sToken').value=getToken();
