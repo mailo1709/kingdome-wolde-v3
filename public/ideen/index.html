@@ -275,6 +275,26 @@
     .teleControls button{background:#1c1c26;color:#fff;border:1px solid #33333f;border-radius:11px;
       min-width:46px;height:46px;font-size:16px;font-weight:700}
     .teleControls #telePlay{background:var(--accent);border-color:var(--accent);min-width:64px}
+    /* Cutter */
+    .cutter{position:fixed;inset:0;z-index:78;background:#0a0910;display:flex;flex-direction:column}
+    .cutter-bar{display:flex;align-items:center;gap:10px;padding:10px 12px calc(10px + env(safe-area-inset-top));
+      background:#12101c;border-bottom:1px solid var(--line)}
+    .cutter-bar button{background:#1c1c26;color:#fff;border:1px solid #33333f;border-radius:10px;padding:8px 12px;font-weight:700}
+    .cutter-title{flex:1;font-weight:800} .cutter-title b{color:var(--accent2);font-size:11px;vertical-align:super}
+    .cutter-stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;background:#000;overflow:hidden}
+    .cutter-stage video{max-width:100%;max-height:100%;display:block}
+    .cuttext{position:absolute;left:0;right:0;bottom:9%;text-align:center;color:#fff;font-weight:800;
+      font-size:6vw;text-shadow:0 2px 8px rgba(0,0,0,.9);padding:0 12px;pointer-events:none}
+    .cutter-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+      text-align:center;color:var(--muted);padding:24px;font-size:14px}
+    .cutter-controls{background:#12101c;border-top:1px solid var(--line);
+      padding:10px 12px calc(12px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px}
+    .cutter-controls .crow{display:flex;gap:8px;align-items:center}
+    .cutter-controls .cbtn{background:#1c1c26;color:#fff;border:1px solid #33333f;border-radius:10px;
+      padding:10px 12px;font-weight:700;font-size:14px}
+    .cutter-controls .cutinfo{flex:1;text-align:center;color:var(--muted);font-size:13px}
+    .cutter-controls input{flex:1;background:var(--bg2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+    .cutter-controls select.cbtn{flex:0 0 auto}
   </style>
 </head>
 <body>
@@ -353,6 +373,7 @@
         <button class="btn ghost" id="mediaRefresh" style="flex:0 0 auto;padding:13px 16px" title="Aktualisieren">↻</button>
       </div>
       <input type="file" id="mediaFile" accept="video/*,audio/*,image/*" multiple style="display:none" />
+      <button class="btn ghost" id="openCutter" style="margin-top:8px">✂️ Cutter Lite (Beta) – Video zuschneiden</button>
       <p class="hint" id="mediaUsage" style="margin:8px 0 0"></p>
       <div id="myMediaList" style="margin-top:12px"></div>
 
@@ -658,6 +679,33 @@
     </div>
   </div>
 
+  <!-- Cutter Lite (Beta) -->
+  <div id="cutterOverlay" class="cutter" hidden>
+    <div class="cutter-bar">
+      <button id="cutClose" title="Schließen">✕</button>
+      <span class="cutter-title">✂️ Cutter Lite <b>Beta</b></span>
+      <button id="cutPick" title="Video wählen">📁 Video</button>
+    </div>
+    <div class="cutter-stage">
+      <video id="cutVid" playsinline controls></video>
+      <div id="cutTextPrev" class="cuttext"></div>
+      <div id="cutHint" class="cutter-hint">Tippe „📁 Video", um ein Video vom Gerät zu laden – oder starte den Cutter über ein Video in „Meine Mediathek".</div>
+    </div>
+    <div class="cutter-controls">
+      <div class="crow"><button id="cutSetIn" class="cbtn">⬇ Start setzen</button>
+        <span class="cutinfo" id="cutInfo">Start 0:00 · Ende –</span>
+        <button id="cutSetOut" class="cbtn">Ende setzen ⬆</button></div>
+      <div class="crow"><button id="cutPlaySel" class="cbtn">▶ Auswahl</button>
+        <button id="cutPlayFull" class="cbtn">⏯ Alles</button>
+        <select id="cutSpeed" class="cbtn"><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="1.5">1,5×</option><option value="2">2×</option></select></div>
+      <div class="crow"><input id="cutText" placeholder="Text einblenden (optional)" /></div>
+      <div class="crow"><button id="cutExport" class="btn primary" style="flex:1">⬇︎ Exportieren</button>
+        <button id="cutPlan" class="btn ghost" style="flex:1">💾 Cut-Plan speichern</button></div>
+      <p class="hint" id="cutMsg" style="margin:2px 0 0"></p>
+    </div>
+    <input type="file" id="cutFile" accept="video/*" style="display:none" />
+  </div>
+
   <script src="content.js"></script>
   <script>
   (function(){
@@ -942,9 +990,10 @@
         <div class="mh"><div class="mic">${ic[m.kind]||'📄'}</div>
           <div class="mn">${esc(m.name)}</div><div class="msz">${fmtSize(m.size)}</div>
           <button class="mdel" data-del="${m.id}" title="Löschen">🗑️</button></div>
-        <div class="mprev" data-prev="${m.id}"><button class="btn ghost" data-open="${m.id}" style="padding:8px;font-size:13px">▶ Vorschau</button></div>
+        <div class="mprev" data-prev="${m.id}"><button class="btn ghost" data-open="${m.id}" style="padding:8px;font-size:13px">▶ Vorschau</button>${m.kind==='video'?`<button class="btn ghost" data-cut="${m.id}" style="padding:8px;font-size:13px;margin-left:6px">✂️ Cutter</button>`:''}</div>
       </div>`).join('');
       el.querySelectorAll('.mdel').forEach(b=>b.onclick=async()=>{ if(confirm('Datei löschen?')){ await idbDel(b.dataset.del); renderMyMedia(); } });
+      el.querySelectorAll('[data-cut]').forEach(b=>b.onclick=()=>openCutterWith(b.dataset.cut));
       el.querySelectorAll('[data-open]').forEach(b=>b.onclick=async()=>{
         const rec=await idbGet(b.dataset.open); if(!rec||!rec.blob) return;
         const url=URL.createObjectURL(rec.blob); _mediaUrls.push(url);
@@ -1619,6 +1668,54 @@
     function openCapture(){ $('#capText').value=''; $('#capResult').innerHTML=''; $('#capActions').style.display='none';
       $('#capMicHint').textContent=''; capItems=[]; openSheet('#captureOverlay'); setTimeout(()=>$('#capText').focus(),80); }
 
+    // ---------- Cutter Lite (Beta) ----------
+    let cutIn=0, cutOut=0, cutURL=null, cutTimer=null;
+    function fmtClock(s){ s=Math.max(0,s||0); const m=Math.floor(s/60), ss=Math.floor(s%60); return m+':'+String(ss).padStart(2,'0'); }
+    function cutMsg(t){ $('#cutMsg').textContent=t||''; }
+    function cutExportSupported(){ try{ const v=document.createElement('video'); return !!(window.MediaRecorder && HTMLCanvasElement.prototype.captureStream && (v.captureStream||v.mozCaptureStream)); }catch(e){ return false; } }
+    function cutInfo(){ const v=$('#cutVid'); $('#cutInfo').textContent='Start '+fmtClock(cutIn)+' · Ende '+(cutOut?fmtClock(cutOut):(v.duration?fmtClock(v.duration):'–')); }
+    function openCutter(){ $('#cutterOverlay').hidden=false; cutMsg(cutExportSupported()?'Tipp: Video scrubben, „Start setzen" & „Ende setzen", dann Exportieren.':'ℹ️ Export geht auf diesem Gerät (z.B. iPhone/iPad) nicht – nutze „Cut-Plan speichern" oder exportiere am Computer/Android.'); }
+    function closeCutter(){ const v=$('#cutVid'); try{v.pause();}catch(e){} clearTimeout(cutTimer); $('#cutterOverlay').hidden=true; }
+    function cutLoadBlob(blob){ const v=$('#cutVid'); if(cutURL){ try{URL.revokeObjectURL(cutURL);}catch(e){} }
+      cutURL=URL.createObjectURL(blob); v.src=cutURL; v.load(); $('#cutHint').style.display='none';
+      $('#cutText').value=''; $('#cutTextPrev').textContent='';
+      v.onloadedmetadata=()=>{ cutIn=0; cutOut=v.duration||0; cutInfo(); }; }
+    function cutPlaySelection(){ const v=$('#cutVid'); if(!v.src) return; v.playbackRate=Number($('#cutSpeed').value)||1;
+      v.currentTime=cutIn; v.play(); clearTimeout(cutTimer);
+      (function tick(){ if(v.paused) return; if(v.currentTime>=(cutOut||v.duration||0)){ v.pause(); return; } cutTimer=setTimeout(tick,60); })(); }
+    function cutSavePlan(){ const dur=Math.max(0,(cutOut||0)-(cutIn||0)); const t=$('#cutText').value.trim();
+      ideas.push({id:uid(),title:'✂️ Cut-Plan '+fmtClock(cutIn)+'–'+fmtClock(cutOut||0),platform:'',
+        notes:'Schnitt von '+fmtClock(cutIn)+' bis '+fmtClock(cutOut||0)+' (Dauer '+dur.toFixed(1)+' s)'+(t?('\nText: '+t):'')+'\nTempo: '+$('#cutSpeed').value+'×',
+        tags:['cut-plan'],link:'',date:'',checklist:[],priority:0,stage:'schnitt',createdAt:Date.now(),updatedAt:Date.now(),deleted:false});
+      save(); renderIdeen(); popOK('Cut-Plan gespeichert'); }
+    async function cutExport(){
+      const v=$('#cutVid'); if(!v.src){ toast('Erst Video wählen'); return; }
+      if(!cutExportSupported()){ cutMsg('Export auf diesem Gerät nicht möglich. Nutze „Cut-Plan speichern" oder exportiere am Computer.'); return; }
+      const inT=cutIn||0, outT=cutOut||v.duration; if(!(outT>inT)){ toast('Start/Ende prüfen'); return; }
+      try{
+        const cvs=document.createElement('canvas'); cvs.width=v.videoWidth||720; cvs.height=v.videoHeight||1280; const ctx=cvs.getContext('2d');
+        const out=cvs.captureStream(30);
+        let src; try{ src=v.captureStream?v.captureStream():v.mozCaptureStream(); }catch(e){}
+        if(src){ src.getAudioTracks().forEach(t=>{ try{out.addTrack(t);}catch(e){} }); }
+        const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(m=>{try{return MediaRecorder.isTypeSupported(m);}catch(e){return false;}})||'video/webm';
+        const rec=new MediaRecorder(out,{mimeType:mime}); const chunks=[]; rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
+        const stopped=new Promise(r=>{ rec.onstop=r; });
+        const txt=$('#cutText').value.trim(); v.playbackRate=Number($('#cutSpeed').value)||1;
+        cutMsg('Export läuft … das Video spielt einmal durch, bitte warten.');
+        v.currentTime=inT; await new Promise(r=>{ v.onseeked=()=>{ v.onseeked=null; r(); }; });
+        rec.start(); await v.play();
+        await new Promise((resolve)=>{ (function draw(){ try{ ctx.drawImage(v,0,0,cvs.width,cvs.height);
+            if(txt){ ctx.textAlign='center'; ctx.font='bold '+Math.round(cvs.width/14)+'px sans-serif'; ctx.lineWidth=Math.max(2,cvs.width/120); ctx.strokeStyle='rgba(0,0,0,.75)'; ctx.fillStyle='#fff'; const y=cvs.height*0.9; ctx.strokeText(txt,cvs.width/2,y); ctx.fillText(txt,cvs.width/2,y); } }catch(e){}
+          if(!v.paused && !v.ended && v.currentTime<outT){ requestAnimationFrame(draw); } else { try{v.pause();}catch(e){} try{rec.stop();}catch(e){} resolve(); } })(); });
+        await stopped;
+        const blob=new Blob(chunks,{type:mime});
+        await idbAdd({id:uid(),name:'cut_'+Date.now()+'.webm',kind:'video',mime:mime,size:blob.size,createdAt:Date.now(),blob:blob});
+        const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='veox_cut.webm'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000);
+        cutMsg('✅ Fertig! In „Meine Mediathek" gespeichert und heruntergeladen.'); popOK('Export fertig 🎬'); renderMyMedia();
+      }catch(err){ cutMsg('Export fehlgeschlagen: '+(err&&err.message||err)+' – versuch es am Computer.'); }
+    }
+    async function openCutterWith(id){ try{ const rec=await idbGet(id); if(rec&&rec.blob){ openCutter(); cutLoadBlob(rec.blob); } }catch(e){} }
+
     // ---------- Wire up ----------
     buildStagePicker();
     buildOrdStages();
@@ -1668,6 +1765,17 @@
     $('#newInvoice').onclick=()=>openInvoice(null);
     $('#bizProfile').onclick=openBiz;
     $('#mediaImport').onclick=()=>$('#mediaFile').click();
+    $('#openCutter').onclick=openCutter;
+    $('#cutClose').onclick=closeCutter;
+    $('#cutPick').onclick=()=>$('#cutFile').click();
+    $('#cutFile').onchange=(e)=>{ const f=e.target.files&&e.target.files[0]; if(f) cutLoadBlob(f); e.target.value=''; };
+    $('#cutSetIn').onclick=()=>{ const v=$('#cutVid'); cutIn=v.currentTime||0; if(cutOut&&cutIn>cutOut) cutOut=v.duration||cutIn; cutInfo(); };
+    $('#cutSetOut').onclick=()=>{ const v=$('#cutVid'); cutOut=v.currentTime||0; if(cutOut<cutIn) cutOut=cutIn; cutInfo(); };
+    $('#cutPlaySel').onclick=cutPlaySelection;
+    $('#cutPlayFull').onclick=()=>{ const v=$('#cutVid'); if(v.paused) v.play(); else v.pause(); };
+    $('#cutText').oninput=()=>{ $('#cutTextPrev').textContent=$('#cutText').value||''; };
+    $('#cutExport').onclick=cutExport;
+    $('#cutPlan').onclick=cutSavePlan;
     $('#mediaRefresh').onclick=()=>renderMyMedia();
     $('#mediaFile').onchange=(e)=>{ const fs=Array.from(e.target.files||[]); e.target.value=''; importMedia(fs); };
     $('#newOrder').onclick=()=>openOrder(null);
