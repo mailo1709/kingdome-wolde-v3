@@ -484,5 +484,65 @@ window.APP_CONTENT = (function () {
       ] },
   ];
 
-  return { GUIDES, GLOSSARY, ASSETS };
+  // ---------------------------------------------------------------------------
+  // STUDIO – Beschreibung „was wir machen" (für App & Website)
+  // ---------------------------------------------------------------------------
+  const STUDIO = {
+    name: 'Dein Video-Studio',
+    slogan: 'Content, der den Daumen stoppt.',
+    about: 'Wir helfen Creators, Selbstständigen und kleinen Marken dabei, mit Videos aufzufallen – von der ersten Idee über den Dreh bis zum fertigen Schnitt. Ob Reels, Shorts, TikTok oder YouTube: schneller, sauberer Schnitt mit Hook, Untertiteln, Musik und dem richtigen Rhythmus, damit die Leute dranbleiben.',
+    services: [
+      { icon: '🎬', title: 'Kurzvideos', text: 'Reels, Shorts & TikToks mit starkem Hook, Untertiteln und Beat-Sync-Schnitt.' },
+      { icon: '📺', title: 'YouTube-Schnitt', text: 'Langform-Videos mit sauberem Storytelling, B-Roll, Grafik und Sounddesign.' },
+      { icon: '🎥', title: 'Dreh & Produktion', text: 'Halbe oder ganze Drehtage – Kamera, Licht, Ton. Wir kommen vorbei oder ihr schickt Material.' },
+      { icon: '🖼️', title: 'Extras', text: 'Thumbnails, Farbkorrektur, Untertitel, Express-Lieferung – flexibel dazubuchbar.' },
+    ],
+    steps: [
+      ['1 · Anfrage', 'Kurz sagen, was du brauchst – Ziel, Plattform, Stil.'],
+      ['2 · Angebot', 'Du bekommst ein passendes Paket mit Festpreis.'],
+      ['3 · Material / Dreh', 'Du schickst dein Rohmaterial oder wir drehen zusammen.'],
+      ['4 · Schnitt', 'Wir schneiden – Hook, Untertitel, Musik, Feinschliff.'],
+      ['5 · Feedback', 'Du bekommst den Entwurf, wir bauen deine Korrekturen ein.'],
+      ['6 · Fertig', 'Du erhältst die fertigen Videos, bereit zum Posten.'],
+    ],
+  };
+
+  // ---------------------------------------------------------------------------
+  // PACKAGES – Beispiel-Preise (frei anpassbar). Für App & Website.
+  // ---------------------------------------------------------------------------
+  const PACKAGES = [
+    { group: '🎬 Kurzvideos (Reels · Shorts · TikTok)', items: [
+      { name: 'Starter', price: 149, unit: 'Paket', popular: false, desc: '3 Kurzvideos, professioneller Schnitt',
+        features: ['3 Videos (bis 60 Sek.)', 'Schnitt + passende Musik', 'Untertitel', '1 Korrekturschleife'] },
+      { name: 'Creator', price: 299, unit: 'Paket', popular: true, desc: '7 Kurzvideos – bestes Preis-Leistungs-Verhältnis',
+        features: ['7 Videos', 'Hook-Optimierung', 'Untertitel + Effekte', '2 Korrekturschleifen'] },
+      { name: 'Pro', price: 499, unit: '/ Monat', popular: false, desc: '12 Kurzvideos im Monat – für regelmäßigen Content',
+        features: ['12 Videos / Monat', 'Alles aus Creator', 'Thumbnails inklusive', 'Priorität & schnelle Lieferung'] },
+    ]},
+    { group: '📺 YouTube (Langform)', items: [
+      { name: 'Single', price: 120, unit: '/ Video', popular: false, desc: '1 YouTube-Video, kompletter Schnitt',
+        features: ['bis 10 Min. fertige Länge', 'Schnitt + B-Roll', 'Musik & Sounddesign', '1 Korrekturschleife'] },
+      { name: 'Bundle', price: 420, unit: '4 Videos', popular: true, desc: '4 YouTube-Videos im Paket (sparst 60 €)',
+        features: ['4 Videos', 'Intro/Outro-Vorlage', 'einfache Grafiken', '2 Korrekturschleifen'] },
+      { name: 'Power', price: 690, unit: '7 Videos', popular: false, desc: '7 YouTube-Videos – für aktive Kanäle',
+        features: ['7 Videos', 'Thumbnails inklusive', 'Priorität', 'monatliche Abstimmung'] },
+    ]},
+    { group: '🎥 Drehtage', items: [
+      { name: 'Halbtag', price: 199, unit: 'bis 3 Std.', popular: false, desc: 'Kurzer Dreh vor Ort',
+        features: ['bis 3 Stunden', 'Kamera + Licht + Ton', 'Material digital übergeben'] },
+      { name: 'Drehtag', price: 349, unit: 'bis 6 Std.', popular: true, desc: 'Klassischer Drehtag',
+        features: ['bis 6 Stunden', 'Kamera + Licht + Ton', 'kurze Location-Wechsel', 'gesichtetes Material'] },
+      { name: 'Full-Day', price: 549, unit: 'bis 10 Std.', popular: false, desc: 'Ganzer Produktionstag',
+        features: ['bis 10 Stunden', 'komplettes Equipment', 'mehrere Setups/Locations', 'Vorsortierung des Materials'] },
+    ]},
+    { group: '➕ Zusatzleistungen', items: [
+      { name: 'Thumbnail-Design', price: 25, unit: '/ Stück', popular: false, desc: 'Klickstarkes Vorschaubild', features: [] },
+      { name: 'Untertitel', price: 15, unit: '/ Video', popular: false, desc: 'Saubere, animierte Untertitel', features: [] },
+      { name: 'Farbkorrektur / Grading', price: 30, unit: '/ Video', popular: false, desc: 'Filmischer, einheitlicher Look', features: [] },
+      { name: 'Express (24 Std.)', price: 0, unit: '+50 %', popular: false, desc: 'Lieferung innerhalb von 24 Stunden', features: [] },
+      { name: 'Extra Korrekturschleife', price: 20, unit: '/ Runde', popular: false, desc: 'Zusätzliche Änderungsrunde', features: [] },
+    ]},
+  ];
+
+  return { GUIDES, GLOSSARY, ASSETS, STUDIO, PACKAGES };
 })();
