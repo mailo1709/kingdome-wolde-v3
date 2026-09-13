@@ -74,6 +74,9 @@
     .intro{color:var(--muted);font-size:14px;margin:12px 0 14px;line-height:1.55}
     .sectionhead{font-size:15px;font-weight:800;letter-spacing:.02em;margin:20px 0 9px;color:var(--text)}
     .appsub{color:var(--muted);font-size:13.5px;margin:-4px 0 12px;line-height:1.5}
+    .moreapps{display:flex;align-items:center;gap:9px;margin:12px 0 4px;color:var(--muted);
+      font-size:13.5px;font-weight:600}
+    .moreapps input{width:auto;transform:scale(1.25);flex:0 0 auto}
     details.acc{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden}
     details.acc>summary{list-style:none;cursor:pointer;padding:13px 14px;font-weight:650;
       display:flex;gap:9px;align-items:center;font-size:15px}
@@ -268,8 +271,9 @@
 
     <!-- LERNEN -->
     <section id="viewLernen" hidden>
-      <p class="intro">Schritt-für-Schritt-Anleitungen für die drei wichtigsten Schnittprogramme. Tippe eine Anleitung an, um sie aufzuklappen.</p>
+      <p class="intro">Fokus auf <b>CapCut</b> – kostenlos auf Handy &amp; iPad, ideal zum Einstieg. Tippe eine Anleitung an, um sie aufzuklappen.</p>
       <div class="tabs" id="appTabs"></div>
+      <label class="moreapps"><input type="checkbox" id="moreApps" /> <span>Auch Premiere Pro &amp; DaVinci Resolve anzeigen</span></label>
       <div id="appSub" class="appsub"></div>
       <div id="guideList"></div>
     </section>
@@ -754,12 +758,18 @@
     function renderIdeen(){ renderTabs(); renderList(); }
 
     // ---------- Lernen: Guides ----------
+    function showMoreApps(){ return localStorage.getItem('ideen_more_apps')==='1'; }
+    function guideApps(){ return showMoreApps() ? C.GUIDES : C.GUIDES.filter(g=>g.key==='capcut'); }
     function renderGuides(){
-      $('#appTabs').innerHTML = C.GUIDES.map(g=>
+      const apps = guideApps();
+      if(!apps.some(g=>g.key===currentApp)) currentApp = (apps[0]||{}).key || 'capcut';
+      $('#moreApps').checked = showMoreApps();
+      $('#appTabs').hidden = apps.length<=1;
+      $('#appTabs').innerHTML = apps.map(g=>
         `<button class="tab ${g.key===currentApp?'active':''}" data-app="${g.key}">${g.icon} ${esc(g.name)}</button>`
       ).join('');
       $('#appTabs').querySelectorAll('.tab').forEach(b=>b.onclick=()=>{currentApp=b.dataset.app;renderGuides();});
-      const g = C.GUIDES.find(x=>x.key===currentApp) || C.GUIDES[0];
+      const g = apps.find(x=>x.key===currentApp) || apps[0];
       if(!g){ $('#guideList').innerHTML=''; return; }
       $('#appSub').textContent = g.subtitle || '';
       $('#guideList').innerHTML = g.items.map(it=>{
@@ -1305,6 +1315,8 @@
     $('#fStarBtn').onclick=()=>{ editStar=editStar?0:1; paintStar(); };
     $('#search').oninput=(e)=>{ query=e.target.value.trim(); renderList(); };
     $('#glossarSearch').oninput=renderGlossar;
+    $('#moreApps').onchange=(e)=>{ localStorage.setItem('ideen_more_apps', e.target.checked?'1':'0');
+      if(!e.target.checked) currentApp='capcut'; renderGuides(); };
     $('#fClearDate').onclick=()=>{ $('#fDate').value=''; };
     $('#fAddCheck').onclick=()=>{ editChecklist.push({text:'',done:false}); renderChecklistEditor();
       const inputs=$('#fChecklist').querySelectorAll('input[type=text]'); if(inputs.length) inputs[inputs.length-1].focus(); };
