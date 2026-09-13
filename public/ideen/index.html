@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Ideen – Content & Cut</title>
+  <meta name="description" content="Ideen sammeln, planen und bis zum fertigen Cut verfolgen." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#7c3aed" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Ideen" />
+  <style>
+    :root{
+      --bg:#14121c; --bg2:#1c1930; --card:#211d36; --card2:#2a2544;
+      --line:#332d52; --text:#efeafc; --muted:#a79fc9; --accent:#7c3aed;
+      --accent2:#a78bfa; --good:#34d399; --warn:#fbbf24; --danger:#f87171;
+      --radius:16px;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;background:var(--bg);color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+      font-size:16px;line-height:1.4}
+    body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+    button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+    input,select,textarea{font:inherit;color:var(--text);background:var(--bg2);
+      border:1px solid var(--line);border-radius:12px;padding:11px 12px;width:100%}
+    textarea{resize:vertical;min-height:90px}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent2)}
+    .wrap{max-width:720px;margin:0 auto;padding:0 14px 120px}
+    header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,var(--bg) 70%,transparent);
+      padding:14px 0 8px;backdrop-filter:blur(6px)}
+    .topbar{display:flex;align-items:center;gap:10px}
+    .logo{width:34px;height:34px;border-radius:9px;flex:0 0 auto;
+      background:linear-gradient(135deg,#7c3aed,#4f46e5);display:grid;place-items:center;font-size:19px}
+    h1{font-size:19px;margin:0;font-weight:700;flex:1}
+    .iconbtn{width:40px;height:40px;border-radius:11px;background:var(--card);
+      display:grid;place-items:center;font-size:18px;border:1px solid var(--line)}
+    .search{margin-top:10px}
+    .tabs{display:flex;gap:7px;overflow-x:auto;margin-top:10px;padding-bottom:3px;scrollbar-width:none}
+    .tabs::-webkit-scrollbar{display:none}
+    .tab{white-space:nowrap;padding:7px 13px;border-radius:999px;background:var(--card);
+      border:1px solid var(--line);color:var(--muted);font-size:14px;font-weight:600}
+    .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+    .tab .cnt{opacity:.7;font-weight:500}
+    .list{margin-top:14px;display:flex;flex-direction:column;gap:11px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+      padding:13px 14px;position:relative}
+    .card .row1{display:flex;align-items:flex-start;gap:9px}
+    .card h3{margin:0;font-size:16px;font-weight:650;flex:1;word-break:break-word}
+    .star{font-size:18px;flex:0 0 auto;line-height:1}
+    .badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .badge{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;
+      background:var(--card2);color:var(--muted);border:1px solid var(--line)}
+    .badge.stage{color:#fff}
+    .notes{color:var(--muted);font-size:14px;margin-top:9px;white-space:pre-wrap;word-break:break-word}
+    .tagline{margin-top:8px;display:flex;flex-wrap:wrap;gap:5px}
+    .tag{font-size:12px;color:var(--accent2)}
+    .empty{text-align:center;color:var(--muted);padding:60px 20px}
+    .empty .big{font-size:44px}
+    .fab{position:fixed;right:18px;bottom:calc(20px + env(safe-area-inset-bottom));
+      width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#4f46e5);
+      color:#fff;font-size:32px;display:grid;place-items:center;z-index:30;
+      box-shadow:0 8px 24px rgba(124,58,237,.5)}
+    /* modal */
+    .overlay{position:fixed;inset:0;background:rgba(6,4,14,.72);z-index:40;
+      display:none;align-items:flex-end;justify-content:center}
+    .overlay.open{display:flex}
+    .sheet{background:var(--bg2);width:100%;max-width:720px;max-height:92vh;overflow:auto;
+      border-radius:22px 22px 0 0;border:1px solid var(--line);border-bottom:none;
+      padding:16px 16px calc(24px + env(safe-area-inset-bottom))}
+    .sheet h2{margin:4px 0 14px;font-size:18px}
+    .field{margin-bottom:13px}
+    .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:600}
+    .two{display:flex;gap:10px}
+    .two>*{flex:1;min-width:0}
+    .stagepick{display:flex;gap:7px;flex-wrap:wrap}
+    .stagepick button{padding:8px 12px;border-radius:10px;background:var(--card);
+      border:1px solid var(--line);color:var(--muted);font-size:14px;font-weight:600}
+    .stagepick button.on{color:#fff}
+    .starrow{display:flex;align-items:center;gap:10px}
+    .btnrow{display:flex;gap:10px;margin-top:6px}
+    .btn{flex:1;padding:13px;border-radius:13px;font-weight:700;text-align:center}
+    .btn.primary{background:var(--accent);color:#fff}
+    .btn.ghost{background:var(--card);border:1px solid var(--line);color:var(--text)}
+    .btn.danger{background:transparent;border:1px solid var(--danger);color:var(--danger)}
+    .hint{font-size:12.5px;color:var(--muted);margin:6px 0 0;line-height:1.45}
+    .hint a{color:var(--accent2)}
+    .syncstate{font-size:12px;color:var(--muted);margin-left:auto}
+    .divider{height:1px;background:var(--line);margin:16px 0}
+    .toast{position:fixed;left:50%;transform:translateX(-50%);
+      bottom:calc(96px + env(safe-area-inset-bottom));background:#000;color:#fff;
+      padding:10px 16px;border-radius:12px;font-size:14px;z-index:60;opacity:0;
+      transition:opacity .2s;pointer-events:none;border:1px solid var(--line);max-width:90%}
+    .toast.show{opacity:.96}
+    code{background:var(--card);padding:1px 5px;border-radius:5px;font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="topbar">
+        <div class="logo">💡</div>
+        <h1>Ideen</h1>
+        <button class="iconbtn" id="btnSync" title="Jetzt synchronisieren">🔄</button>
+        <button class="iconbtn" id="btnSettings" title="Einstellungen">⚙️</button>
+      </div>
+      <input class="search" id="search" type="search" placeholder="Suchen …" autocomplete="off" />
+      <div class="tabs" id="tabs"></div>
+    </header>
+    <div class="list" id="list"></div>
+  </div>
+
+  <button class="fab" id="fab" aria-label="Neue Idee">+</button>
+
+  <!-- Editor -->
+  <div class="overlay" id="editorOverlay">
+    <div class="sheet">
+      <h2 id="editorTitle">Neue Idee</h2>
+      <div class="field">
+        <label>Titel</label>
+        <input id="fTitle" placeholder="z.B. Reel: 3 Cut-Tricks in 30s" />
+      </div>
+      <div class="field two">
+        <div>
+          <label>Format / Plattform</label>
+          <select id="fPlatform">
+            <option value="">—</option>
+            <option>Reel</option><option>Short</option><option>TikTok</option>
+            <option>YouTube</option><option>Story</option><option>Podcast</option>
+            <option>Foto/Post</option><option>Sonstiges</option>
+          </select>
+        </div>
+        <div>
+          <label>Priorität</label>
+          <div class="starrow" style="height:44px">
+            <button class="iconbtn" id="fStarBtn" type="button">☆</button>
+            <span class="hint" style="margin:0">Wichtig markieren</span>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Phase</label>
+        <div class="stagepick" id="fStages"></div>
+      </div>
+      <div class="field">
+        <label>Notizen / Skript / Hook</label>
+        <textarea id="fNotes" placeholder="Idee, Hook, Ablauf, Schnitt-Notizen …"></textarea>
+      </div>
+      <div class="field">
+        <label>Tags (mit Komma trennen)</label>
+        <input id="fTags" placeholder="funny, tutorial, trend" />
+      </div>
+      <div class="btnrow">
+        <button class="btn ghost" id="editCancel">Abbrechen</button>
+        <button class="btn primary" id="editSave">Speichern</button>
+      </div>
+      <div class="btnrow" id="deleteRow" style="display:none">
+        <button class="btn danger" id="editDelete">Idee löschen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="overlay" id="settingsOverlay">
+    <div class="sheet">
+      <h2>Einstellungen & Sync</h2>
+      <p class="hint">Deine Ideen liegen lokal auf diesem Gerät. Für dieselben Ideen auf
+        Handy & Laptop wird ein <b>privater GitHub-Gist</b> als Speicher genutzt.</p>
+      <div class="field">
+        <label>GitHub Token (Scope: <code>gist</code>)</label>
+        <input id="sToken" type="password" placeholder="ghp_… oder github_pat_…" autocomplete="off" />
+        <p class="hint">Erstellen: <a href="https://github.com/settings/tokens/new?scopes=gist&description=Ideen-App" target="_blank" rel="noopener">github.com → Token</a>
+          → nur „gist" ankreuzen. Wird nur lokal in diesem Browser gespeichert.</p>
+      </div>
+      <div class="field">
+        <label>Gist-ID</label>
+        <input id="sGist" placeholder="leer lassen → wird beim ersten Sync erstellt" autocomplete="off" />
+        <p class="hint">Auf dem 2. Gerät hier dieselbe Gist-ID eintragen, dann „Synchronisieren".</p>
+      </div>
+      <div class="starrow" style="justify-content:space-between">
+        <span>Automatisch synchronisieren</span>
+        <input type="checkbox" id="sAuto" style="width:auto;transform:scale(1.3)" />
+      </div>
+      <div class="btnrow">
+        <button class="btn ghost" id="setClose">Schließen</button>
+        <button class="btn primary" id="setSync">🔄 Synchronisieren</button>
+      </div>
+      <div class="divider"></div>
+      <div class="btnrow">
+        <button class="btn ghost" id="btnExport">⬇︎ Export (JSON)</button>
+        <button class="btn ghost" id="btnImport">⬆︎ Import</button>
+      </div>
+      <input type="file" id="importFile" accept="application/json,.json" style="display:none" />
+      <p class="hint" id="statusLine" style="margin-top:12px"></p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+  (function(){
+    "use strict";
+    const $ = (s)=>document.querySelector(s);
+    const LS = {
+      ideas:'ideen_data', token:'ideen_gh_token', gist:'ideen_gist_id', auto:'ideen_autosync'
+    };
+    const STAGES = [
+      {key:'idee',    label:'💡 Idee',    color:'#8b5cf6'},
+      {key:'skript',  label:'📝 Skript',  color:'#3b82f6'},
+      {key:'drehen',  label:'🎬 Drehen',  color:'#f59e0b'},
+      {key:'schnitt', label:'✂️ Schnitt', color:'#ec4899'},
+      {key:'fertig',  label:'✅ Fertig',  color:'#10b981'},
+    ];
+    const stageOf = (k)=>STAGES.find(s=>s.key===k)||STAGES[0];
+
+    let ideas = load();
+    let filter = 'alle';
+    let query = '';
+    let editingId = null;
+    let editStar = 0, editStage = 'idee';
+
+    function load(){
+      try{ return JSON.parse(localStorage.getItem(LS.ideas)) || []; }catch(e){ return []; }
+    }
+    function save(){
+      try{ localStorage.setItem(LS.ideas, JSON.stringify(ideas)); }catch(e){}
+    }
+    function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+    function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,
+      c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function toast(msg){
+      const t=$('#toast'); t.textContent=msg; t.classList.add('show');
+      clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2200);
+    }
+    const active = ()=> ideas.filter(i=>!i.deleted);
+
+    // ---------- Render ----------
+    function renderTabs(){
+      const counts = {alle: active().length};
+      STAGES.forEach(s=> counts[s.key]=active().filter(i=>i.stage===s.key).length);
+      const tabs=[{key:'alle',label:'Alle'}].concat(STAGES.map(s=>({key:s.key,label:s.label})));
+      $('#tabs').innerHTML = tabs.map(t=>
+        `<button class="tab ${filter===t.key?'active':''}" data-tab="${t.key}">${esc(t.label)} <span class="cnt">${counts[t.key]||0}</span></button>`
+      ).join('');
+      $('#tabs').querySelectorAll('.tab').forEach(b=>b.onclick=()=>{filter=b.dataset.tab;renderTabs();renderList();});
+    }
+
+    function renderList(){
+      let items = active();
+      if(filter!=='alle') items = items.filter(i=>i.stage===filter);
+      if(query){
+        const q=query.toLowerCase();
+        items = items.filter(i=>
+          (i.title||'').toLowerCase().includes(q) ||
+          (i.notes||'').toLowerCase().includes(q) ||
+          (i.platform||'').toLowerCase().includes(q) ||
+          (i.tags||[]).join(' ').toLowerCase().includes(q));
+      }
+      items.sort((a,b)=> (b.priority-a.priority) || (b.updatedAt-a.updatedAt));
+      const list=$('#list');
+      if(!items.length){
+        list.innerHTML = `<div class="empty"><div class="big">🗒️</div>
+          <p>${active().length? 'Keine Treffer in dieser Ansicht.' : 'Noch keine Ideen.<br>Tippe auf „+" und leg los!'}</p></div>`;
+        return;
+      }
+      list.innerHTML = items.map(i=>{
+        const st=stageOf(i.stage);
+        const tags=(i.tags||[]).filter(Boolean);
+        return `<div class="card" data-id="${i.id}">
+          <div class="row1">
+            <h3>${esc(i.title||'Ohne Titel')}</h3>
+            ${i.priority?'<span class="star">⭐</span>':''}
+          </div>
+          <div class="badges">
+            <span class="badge stage" style="background:${st.color};border-color:${st.color}">${esc(st.label)}</span>
+            ${i.platform?`<span class="badge">${esc(i.platform)}</span>`:''}
+          </div>
+          ${i.notes?`<div class="notes">${esc(i.notes.length>180?i.notes.slice(0,180)+'…':i.notes)}</div>`:''}
+          ${tags.length?`<div class="tagline">${tags.map(t=>`<span class="tag">#${esc(t)}</span>`).join('')}</div>`:''}
+        </div>`;
+      }).join('');
+      list.querySelectorAll('.card').forEach(c=>c.onclick=()=>openEditor(c.dataset.id));
+    }
+
+    function renderAll(){ renderTabs(); renderList(); }
+
+    // ---------- Editor ----------
+    function buildStagePicker(){
+      $('#fStages').innerHTML = STAGES.map(s=>
+        `<button type="button" data-stage="${s.key}">${esc(s.label)}</button>`).join('');
+      $('#fStages').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+        editStage=b.dataset.stage; paintStagePicker();
+      });
+    }
+    function paintStagePicker(){
+      $('#fStages').querySelectorAll('button').forEach(b=>{
+        const on=b.dataset.stage===editStage; const c=stageOf(b.dataset.stage).color;
+        b.classList.toggle('on',on);
+        b.style.background=on?c:''; b.style.borderColor=on?c:'';
+      });
+    }
+    function paintStar(){ $('#fStarBtn').textContent = editStar?'⭐':'☆'; }
+
+    function openEditor(id){
+      editingId = id || null;
+      const it = id ? ideas.find(x=>x.id===id) : null;
+      $('#editorTitle').textContent = it ? 'Idee bearbeiten' : 'Neue Idee';
+      $('#fTitle').value = it?.title || '';
+      $('#fPlatform').value = it?.platform || '';
+      $('#fNotes').value = it?.notes || '';
+      $('#fTags').value = (it?.tags||[]).join(', ');
+      editStar = it?.priority ? 1 : 0;
+      editStage = it?.stage || (filter!=='alle'?filter:'idee');
+      paintStar(); paintStagePicker();
+      $('#deleteRow').style.display = it ? 'flex' : 'none';
+      openSheet('#editorOverlay');
+      setTimeout(()=>$('#fTitle').focus(),80);
+    }
+    function saveEditor(){
+      const title=$('#fTitle').value.trim();
+      const notes=$('#fNotes').value.trim();
+      if(!title && !notes){ toast('Bitte Titel oder Notiz eingeben'); return; }
+      const tags=$('#fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+      const now=Date.now();
+      if(editingId){
+        const it=ideas.find(x=>x.id===editingId);
+        Object.assign(it,{title,platform:$('#fPlatform').value,notes,tags,
+          priority:editStar,stage:editStage,updatedAt:now});
+      }else{
+        ideas.push({id:uid(),title,platform:$('#fPlatform').value,notes,tags,
+          priority:editStar,stage:editStage,createdAt:now,updatedAt:now,deleted:false});
+      }
+      save(); renderAll(); closeSheet('#editorOverlay'); toast('Gespeichert');
+      maybeAutoSync();
+    }
+    function deleteEditor(){
+      if(!editingId) return;
+      if(!confirm('Diese Idee wirklich löschen?')) return;
+      const it=ideas.find(x=>x.id===editingId);
+      if(it){ it.deleted=true; it.updatedAt=Date.now(); }
+      save(); renderAll(); closeSheet('#editorOverlay'); toast('Gelöscht');
+      maybeAutoSync();
+    }
+
+    // ---------- Sheets ----------
+    function openSheet(sel){ $(sel).classList.add('open'); }
+    function closeSheet(sel){ $(sel).classList.remove('open'); }
+
+    // ---------- GitHub Gist Sync ----------
+    const GIST_FILE='ideen.json';
+    function getToken(){ return localStorage.getItem(LS.token)||''; }
+    function getGistId(){ return localStorage.getItem(LS.gist)||''; }
+    function ghHeaders(){ return {'Authorization':'Bearer '+getToken(),
+      'Accept':'application/vnd.github+json','Content-Type':'application/json'}; }
+
+    function mergeRemote(remoteArr){
+      const map={}; ideas.forEach(i=>map[i.id]=i);
+      let changed=false;
+      remoteArr.forEach(r=>{
+        if(!r||!r.id) return;
+        const cur=map[r.id];
+        if(!cur || (r.updatedAt||0) > (cur.updatedAt||0)){ map[r.id]=r; changed=true; }
+      });
+      ideas = Object.values(map);
+      if(changed){ save(); renderAll(); }
+      return changed;
+    }
+
+    async function syncNow(silent){
+      const token=getToken();
+      if(!token){ if(!silent){ openSheet('#settingsOverlay'); toast('Bitte zuerst GitHub-Token eintragen'); } return; }
+      setStatus('Synchronisiere …');
+      try{
+        let gid=getGistId();
+        // 1) Pull + merge
+        if(gid){
+          const res=await fetch('https://api.github.com/gists/'+gid,{headers:ghHeaders()});
+          if(res.status===404){ localStorage.removeItem(LS.gist); gid=''; }
+          else if(!res.ok){ throw new Error('Laden fehlgeschlagen ('+res.status+')'); }
+          else{
+            const data=await res.json();
+            const f=data.files && data.files[GIST_FILE];
+            if(f){
+              let content=f.content;
+              if(f.truncated && f.raw_url){ content=await (await fetch(f.raw_url)).text(); }
+              try{ mergeRemote(JSON.parse(content)); }catch(e){}
+            }
+          }
+        }
+        // 2) Push merged state
+        const body=JSON.stringify({
+          description:'Ideen-App Daten',
+          files:{[GIST_FILE]:{content:JSON.stringify(ideas,null,2)}}
+        });
+        let res2, out;
+        if(gid){
+          res2=await fetch('https://api.github.com/gists/'+gid,{method:'PATCH',headers:ghHeaders(),body});
+        }else{
+          res2=await fetch('https://api.github.com/gists',{method:'POST',headers:ghHeaders(),
+            body:JSON.stringify({description:'Ideen-App Daten',public:false,
+              files:{[GIST_FILE]:{content:JSON.stringify(ideas,null,2)}}})});
+        }
+        if(!res2.ok){
+          if(res2.status===401) throw new Error('Token ungültig (401)');
+          throw new Error('Speichern fehlgeschlagen ('+res2.status+')');
+        }
+        out=await res2.json();
+        if(out.id && out.id!==gid){ localStorage.setItem(LS.gist,out.id); $('#sGist').value=out.id; }
+        setStatus('✅ Synchronisiert: '+new Date().toLocaleString('de-DE'));
+        if(!silent) toast('Synchronisiert ✓');
+      }catch(err){
+        setStatus('⚠️ '+err.message);
+        if(!silent) toast(err.message);
+      }
+    }
+    let autoT=null;
+    function maybeAutoSync(){
+      if(localStorage.getItem(LS.auto)!=='1' || !getToken()) return;
+      clearTimeout(autoT); autoT=setTimeout(()=>syncNow(true),1500);
+    }
+    function setStatus(t){ $('#statusLine').textContent=t; }
+
+    // ---------- Export / Import ----------
+    function exportJson(){
+      const blob=new Blob([JSON.stringify(ideas,null,2)],{type:'application/json'});
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='ideen-backup-'+new Date().toISOString().slice(0,10)+'.json';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+    }
+    function importJson(file){
+      const r=new FileReader();
+      r.onload=()=>{
+        try{
+          const arr=JSON.parse(r.result);
+          if(!Array.isArray(arr)) throw 0;
+          mergeRemote(arr); renderAll(); toast('Import: '+arr.length+' Einträge zusammengeführt');
+        }catch(e){ toast('Import fehlgeschlagen – ungültige Datei'); }
+      };
+      r.readAsText(file);
+    }
+
+    // ---------- Wire up ----------
+    buildStagePicker();
+    renderAll();
+
+    $('#fab').onclick=()=>openEditor(null);
+    $('#editSave').onclick=saveEditor;
+    $('#editCancel').onclick=()=>closeSheet('#editorOverlay');
+    $('#editDelete').onclick=deleteEditor;
+    $('#fStarBtn').onclick=()=>{ editStar=editStar?0:1; paintStar(); };
+    $('#search').oninput=(e)=>{ query=e.target.value.trim(); renderList(); };
+
+    $('#btnSettings').onclick=()=>{
+      $('#sToken').value=getToken();
+      $('#sGist').value=getGistId();
+      $('#sAuto').checked=localStorage.getItem(LS.auto)==='1';
+      setStatus(getToken()?'':'Noch nicht eingerichtet.');
+      openSheet('#settingsOverlay');
+    };
+    $('#setClose').onclick=()=>{
+      localStorage.setItem(LS.token,$('#sToken').value.trim());
+      localStorage.setItem(LS.gist,$('#sGist').value.trim());
+      localStorage.setItem(LS.auto,$('#sAuto').checked?'1':'0');
+      closeSheet('#settingsOverlay');
+    };
+    $('#setSync').onclick=()=>{
+      localStorage.setItem(LS.token,$('#sToken').value.trim());
+      localStorage.setItem(LS.gist,$('#sGist').value.trim());
+      localStorage.setItem(LS.auto,$('#sAuto').checked?'1':'0');
+      syncNow(false);
+    };
+    $('#btnSync').onclick=()=>syncNow(false);
+    $('#btnExport').onclick=exportJson;
+    $('#btnImport').onclick=()=>$('#importFile').click();
+    $('#importFile').onchange=(e)=>{ if(e.target.files[0]) importJson(e.target.files[0]); e.target.value=''; };
+
+    // close sheet on backdrop tap
+    document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{
+      if(e.target===o) o.classList.remove('open');
+    }));
+
+    // auto-sync on start if configured
+    if(localStorage.getItem(LS.auto)==='1' && getToken() && getGistId()){
+      setTimeout(()=>syncNow(true),600);
+    }
+
+    // service worker
+    if('serviceWorker' in navigator){
+      window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+    }
+  })();
+  </script>
+</body>
+</html>

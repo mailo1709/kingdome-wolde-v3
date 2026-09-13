@@ -1,0 +1,17 @@
+{
+  "name": "Ideen – Content & Cut",
+  "short_name": "Ideen",
+  "description": "Ideen sammeln, planen und bis zum fertigen Cut verfolgen.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#14121c",
+  "theme_color": "#7c3aed",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
