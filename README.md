@@ -1,6 +1,23 @@
-# kingdome-wolde-v3
+# Veox Edits – Content-Studio
 
-Prototyp-Spiel (React + Vite).
+Projekt von **Veox Edits** (Mailo Heller). Enthält zwei eigenständige Web-Apps
+plus das ursprüngliche Prototyp-Spiel – alles über GitHub Pages ausgeliefert.
+
+> Hinweis: Der GitHub-Repo-Name bleibt `kingdome-wolde-v3`, weil davon die
+> Live-Adressen (GitHub Pages URLs) abhängen. Der „richtige" Projektname ist
+> **Veox Edits** (siehe `package.json`).
+
+## Bestandteile
+
+| Teil | Pfad | Live-Adresse |
+|------|------|--------------|
+| 💡 **Ideen-App** (Ideen, Übersicht, Rechnungen, Aufträge, Mediathek, Lernen) | `public/ideen/` | `…github.io/kingdome-wolde-v3/ideen/` |
+| 🌐 **Studio-Website** | `public/website/` | `…github.io/kingdome-wolde-v3/website/` |
+| 🎮 Prototyp-Spiel (React + Vite) | `src/` | `…github.io/kingdome-wolde-v3/` |
+
+Website-Kontakt/Impressum ändert man in `public/website/config.js`.
+
+## Spiel starten (Entwicklung)
 
 ## Starten
 

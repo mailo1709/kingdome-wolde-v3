@@ -12,6 +12,7 @@
       --good:#34d399; --max:1080px;
     }
     *{box-sizing:border-box}
+    [hidden]{display:none!important}
     html{scroll-behavior:smooth}
     body{margin:0;background:var(--bg);color:var(--text);
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
@@ -101,6 +102,32 @@
     .goal{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
     .goal h3{margin:0 0 6px;font-size:17px}
     .goal p{margin:0;color:var(--muted);font-size:15px}
+    /* Anfrage-Formular */
+    .anfrage{display:flex;flex-direction:column;gap:10px;max-width:480px;margin:0 auto 6px;text-align:left}
+    .anfrage input,.anfrage select,.anfrage textarea{width:100%;background:var(--bg);color:var(--text);
+      border:1px solid var(--line);border-radius:12px;padding:12px 13px;font:inherit}
+    .anfrage textarea{min-height:90px;resize:vertical}
+    .anfrage input:focus,.anfrage select:focus,.anfrage textarea:focus{outline:none;border-color:var(--accent)}
+    .anfrage .btn{cursor:pointer;border:none}
+    .orsep{color:var(--muted);font-size:13px;margin:14px 0 10px}
+    .btn{cursor:pointer;transition:transform .08s ease, box-shadow .2s ease}
+    .btn:active{transform:scale(.97)}
+    /* Erfolgs-Overlay */
+    .afok{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;
+      background:rgba(8,6,16,.72);padding:20px;animation:affade .18s ease}
+    .afok-card{background:var(--card);border:1px solid var(--line);border-radius:22px;
+      padding:34px 28px;text-align:center;max-width:360px;animation:afscale .35s cubic-bezier(.2,.8,.25,1.3)}
+    .afok-check{width:78px;height:78px;margin:0 auto 16px;border-radius:50%;background:var(--good);
+      color:#fff;font-size:46px;font-weight:800;display:grid;place-items:center;animation:afpop .5s ease}
+    .afok-h{font-size:22px;font-weight:800;margin-bottom:8px}
+    .afok-p{color:var(--muted);font-size:15px;line-height:1.5}
+    @keyframes affade{from{opacity:0}to{opacity:1}}
+    @keyframes afscale{from{opacity:0;transform:scale(.7) translateY(10px)}to{opacity:1;transform:none}}
+    @keyframes afpop{0%{transform:scale(.2);opacity:0}60%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+    /* Scroll-Einblendung */
+    .reveal{opacity:0;transform:translateY(18px);transition:opacity .55s ease, transform .55s ease}
+    .reveal.in{opacity:1;transform:none}
+    @media (prefers-reduced-motion: reduce){ .reveal{opacity:1;transform:none;transition:none} }
   </style>
 </head>
 <body>
@@ -193,8 +220,16 @@
         <div class="contact">
           <h2>Bereit für besseren Content?</h2>
           <p>Schreib kurz, was du vorhast – du bekommst schnell ein passendes Angebot mit Festpreis.</p>
+          <form id="anfrageForm" class="anfrage" novalidate>
+            <input id="afName" placeholder="Dein Name" autocomplete="name" />
+            <input id="afContact" placeholder="E-Mail oder Handy (für Rückmeldung)" autocomplete="email" />
+            <select id="afPkg"><option value="">Was brauchst du? (Paket wählen – optional)</option></select>
+            <textarea id="afMsg" placeholder="Kurz: Plattform, Anzahl Videos, Wunschtermin, Stil …"></textarea>
+            <button class="btn primary" type="submit" id="afSend">Anfrage absenden →</button>
+          </form>
+          <p class="orsep">oder direkt:</p>
           <div class="actions">
-            <a class="btn primary" id="mailBtn" href="mailto:deine@email.de?subject=Anfrage%20Videoschnitt">
+            <a class="btn ghost" id="mailBtn" href="mailto:deine@email.de?subject=Anfrage%20Videoschnitt">
               <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
               Anfrage per E-Mail</a>
             <a class="btn ghost" id="igBtn" href="#">
@@ -208,6 +243,15 @@
       </div>
     </section>
   </main>
+
+  <div id="afOk" class="afok" hidden>
+    <div class="afok-card">
+      <div class="afok-check">✓</div>
+      <div class="afok-h">Danke!</div>
+      <div class="afok-p" id="afOkP">Deine Anfrage ist unterwegs – ich melde mich schnell bei dir zurück.</div>
+      <button class="btn primary" id="afOkClose" style="margin-top:18px">Alles klar</button>
+    </div>
+  </div>
 
   <footer>
     <div class="wrap">
@@ -425,6 +469,34 @@
     document.getElementById('goals').innerHTML = GO.map(function(g){
       return '<div class="goal"><h3>'+esc(g[0])+'</h3><p>'+esc(g[1])+'</p></div>';
     }).join('');
+
+    // Anfrage-Formular
+    var pkgSel=document.getElementById('afPkg');
+    if(pkgSel){ P.forEach(function(g){ if(/Zusatz/.test(g.group)) return;
+      (g.items||[]).forEach(function(it){ var o=document.createElement('option');
+        o.value=it.name+' – '+eur(it.price); o.textContent=g.group.replace(/^\S+\s/,'')+': '+it.name+' ('+eur(it.price)+')';
+        pkgSel.appendChild(o); }); }); }
+    var form=document.getElementById('anfrageForm');
+    if(form){ form.addEventListener('submit',function(e){ e.preventDefault();
+      var nm=(document.getElementById('afName').value||'').trim();
+      var ct=(document.getElementById('afContact').value||'').trim();
+      var pk=document.getElementById('afPkg').value;
+      var ms=(document.getElementById('afMsg').value||'').trim();
+      var to=(C.CONTACT&&C.CONTACT.email)?C.CONTACT.email:'';
+      var subj='Anfrage'+(nm?(' von '+nm):'')+(pk?(' – '+pk):'');
+      var body='Name: '+nm+'\nKontakt: '+ct+'\nPaket: '+(pk||'-')+'\n\nNachricht:\n'+ms;
+      if(to){ window.location.href='mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body); }
+      var okp=document.getElementById('afOkP'); if(okp&&nm) okp.textContent='Danke '+nm+'! Deine Anfrage ist unterwegs – ich melde mich schnell bei dir zurück.';
+      document.getElementById('afOk').hidden=false;
+    }); }
+    var okc=document.getElementById('afOkClose'); if(okc) okc.onclick=function(){ document.getElementById('afOk').hidden=true; };
+
+    // Scroll-Einblendung
+    try{
+      var obs=new IntersectionObserver(function(es){ es.forEach(function(en){
+        if(en.isIntersecting){ en.target.classList.add('in'); obs.unobserve(en.target); } }); },{threshold:0.1});
+      document.querySelectorAll('main section').forEach(function(s){ s.classList.add('reveal'); obs.observe(s); });
+    }catch(e){ document.querySelectorAll('main section').forEach(function(s){ s.classList.add('in'); }); }
   })();
   </script>
 </body>
