@@ -143,6 +143,24 @@
     .invcard .imeta{color:var(--muted);font-size:13px;margin-top:4px}
     .ipill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid var(--line)}
     .ipill.offen{color:var(--warn)} .ipill.bezahlt{color:var(--good)}
+    .ordcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px;cursor:pointer}
+    .ordcard .or1{display:flex;align-items:center;gap:8px}
+    .ordcard .onm{font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .ordcard .ometa{color:var(--muted);font-size:13px;margin-top:4px}
+    .ordpill{font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;color:#fff;white-space:nowrap}
+    /* Animationen */
+    .btn:active,.iconbtn:active,.tab:active,.navbtn:active{transform:scale(.97)}
+    details.acc[open]>.accbody{animation:accIn .22s ease}
+    @keyframes accIn{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:none}}
+    .okpop{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;
+      background:rgba(6,4,14,.55);animation:okfade .16s ease}
+    .okpop-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px 30px;
+      text-align:center;animation:okscale .3s cubic-bezier(.2,.8,.25,1.25)}
+    .okpop-check{width:66px;height:66px;margin:0 auto 12px;border-radius:50%;background:var(--good);color:#fff;
+      font-size:40px;font-weight:800;display:grid;place-items:center}
+    .okpop-txt{font-weight:700;font-size:15px}
+    @keyframes okfade{from{opacity:0}to{opacity:1}}
+    @keyframes okscale{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
     .pkggrouphd{font-size:13px;font-weight:800;color:var(--accent2);margin:14px 0 8px}
     .pkgcard{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:11px 13px;
       margin-bottom:8px;display:flex;gap:10px;align-items:center;cursor:pointer}
@@ -298,7 +316,12 @@
 
     <!-- RECHNUNG / BUSINESS -->
     <section id="viewRechnung" hidden>
-      <div class="sectionhead" style="margin-top:16px">📦 Angebote &amp; Preise</div>
+      <div class="sectionhead" style="margin-top:16px">📋 Aufträge</div>
+      <p class="catnote">Kunden-Aufträge verfolgen: Angefragt → Bestätigt → Drehtermin → Schnitt → Fertig → Geliefert (oder Abgesagt). Alles jederzeit editierbar.</p>
+      <button class="btn primary" id="newOrder" style="margin-bottom:10px">＋ Neuer Auftrag</button>
+      <div class="list" id="orderList"></div>
+
+      <div class="sectionhead" style="margin-top:24px">📦 Angebote &amp; Preise</div>
       <p class="catnote">Deine Pakete – antippen zum Bearbeiten. „→ Rechnung" erstellt daraus direkt eine Rechnung. (Beispielpreise, frei änderbar.)</p>
       <div id="packageList"></div>
       <button class="btn ghost" id="newPackage" style="margin-top:6px;padding:11px">＋ Paket / Angebot</button>
@@ -490,6 +513,34 @@
     </div>
   </div>
 
+  <!-- Auftrag -->
+  <div class="overlay" id="orderOverlay">
+    <div class="sheet">
+      <h2 id="ordTitle">Neuer Auftrag</h2>
+      <div class="field"><label>Kunde (Name)</label><input id="ordCustomer" placeholder="Name des Kunden" /></div>
+      <div class="field two">
+        <div><label>Kontakt (E-Mail od. Handy)</label><input id="ordContact" placeholder="mail@… oder 0170…" /></div>
+        <div><label>Preis (€)</label><input id="ordPrice" type="number" inputmode="decimal" /></div>
+      </div>
+      <div class="field"><label>Adresse (später eintragbar)</label><textarea id="ordAddress" style="min-height:54px" placeholder="Straße, PLZ Ort …"></textarea></div>
+      <div class="field two">
+        <div><label>Leistung / Paket</label><input id="ordPackage" placeholder="z.B. Creator (7 Reels)" /></div>
+        <div><label>Drehtermin</label><input id="ordDate" type="date" /></div>
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <div class="stagepick" id="ordStages"></div>
+      </div>
+      <div class="field"><label>Notizen</label><textarea id="ordNotes" style="min-height:54px" placeholder="Wünsche, Details, Liefer-Link …"></textarea></div>
+      <div class="btnrow"><button class="btn ghost" id="ordCancel">Abbrechen</button><button class="btn primary" id="ordSave">Speichern</button></div>
+      <div class="btnrow"><button class="btn ghost" id="ordNotify">📣 Kunde benachrichtigen</button></div>
+      <div class="btnrow" id="ordDeleteRow" style="display:none"><button class="btn danger" id="ordDelete">Auftrag löschen</button></div>
+    </div>
+  </div>
+
+  <!-- Erfolgs-Animation -->
+  <div id="okPop" class="okpop" hidden><div class="okpop-card"><div class="okpop-check">✓</div><div class="okpop-txt" id="okPopTxt">Erledigt</div></div></div>
+
   <!-- Paket / Angebot -->
   <div class="overlay" id="packageOverlay">
     <div class="sheet">
@@ -595,7 +646,7 @@
     const C = window.APP_CONTENT || {GUIDES:[],GLOSSARY:[],ASSETS:[]};
     const LS = {
       ideas:'ideen_data', token:'ideen_gh_token', gist:'ideen_gist_id', auto:'ideen_autosync',
-      invoices:'ideen_invoices', biz:'ideen_biz', packages:'ideen_packages'
+      invoices:'ideen_invoices', biz:'ideen_biz', packages:'ideen_packages', orders:'ideen_orders'
     };
     const STAGES = [
       {key:'idee',    label:'💡 Idee',    color:'#8b5cf6'},
@@ -652,7 +703,7 @@
       document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
       try{ if(('#'+v)!==location.hash) history.replaceState(null,'','#'+v); }catch(e){}
       if(v==='uebersicht') renderUebersicht();
-      if(v==='rechnung'){ renderPackages(); renderInvoices(); }
+      if(v==='rechnung'){ renderOrders(); renderPackages(); renderInvoices(); }
       if(v==='lernen') renderGuides();
       if(v==='glossar') renderGlossar();
       if(v==='assets') renderAssets();
@@ -930,13 +981,14 @@
     // ---------- GitHub Gist Sync ----------
     const GIST_FILE='ideen.json';
     const INV_FILE='rechnungen.json';
-    function invPayload(){ return JSON.stringify({invoices, biz:getBiz(), packages}, null, 2); }
+    function invPayload(){ return JSON.stringify({invoices, biz:getBiz(), packages, orders}, null, 2); }
     async function pullInvoices(f){
       if(!f) return;
       try{ let content=f.content; if(f.truncated && f.raw_url){ content=await (await fetch(f.raw_url)).text(); }
         const parsed=JSON.parse(content);
         mergeInvoices(parsed.invoices);
         mergePackages(parsed.packages);
+        mergeOrders(parsed.orders);
         const rb=parsed.biz, lb=getBiz();
         if(rb && (rb.updatedAt||0) > (lb.updatedAt||0)){ setBiz(rb); if(view==='rechnung') renderInvoices(); }
       }catch(e){}
@@ -1303,6 +1355,94 @@
       if(changed){ savePackages(); if(view==='rechnung') renderPackages(); }
     }
 
+    // ---------- Aufträge (Kunden-Tracker) ----------
+    const ORDER_STATES=[
+      {key:'angefragt',label:'📩 Angefragt',color:'#8b5cf6'},
+      {key:'bestaetigt',label:'🤝 Bestätigt',color:'#3b82f6'},
+      {key:'drehtermin',label:'🎥 Drehtermin',color:'#f59e0b'},
+      {key:'schnitt',label:'✂️ Schnitt',color:'#ec4899'},
+      {key:'fertig',label:'✅ Fertig',color:'#10b981'},
+      {key:'geliefert',label:'📤 Geliefert',color:'#22c55e'},
+      {key:'abgesagt',label:'❌ Abgesagt',color:'#ef4444'},
+    ];
+    const ostateOf=(k)=>ORDER_STATES.find(s=>s.key===k)||ORDER_STATES[0];
+    let orders=loadOrders(), editOrdId=null, editOrdStatus='angefragt';
+    function loadOrders(){ try{ return JSON.parse(localStorage.getItem(LS.orders))||[]; }catch(e){ return []; } }
+    function saveOrders(){ try{ localStorage.setItem(LS.orders, JSON.stringify(orders)); }catch(e){} }
+    const activeOrders=()=>orders.filter(o=>!o.deleted);
+    let okT=null;
+    function popOK(txt){ $('#okPopTxt').textContent=txt||'Erledigt'; $('#okPop').hidden=false;
+      clearTimeout(okT); okT=setTimeout(()=>{ $('#okPop').hidden=true; },1300); }
+    function isDone(o){ return o.status==='geliefert'||o.status==='abgesagt'; }
+    function renderOrders(){
+      const el=$('#orderList');
+      const list=activeOrders().sort((a,b)=> (isDone(a)?1:0)-(isDone(b)?1:0) || (b.updatedAt-a.updatedAt));
+      if(!list.length){ el.innerHTML='<p class="hint" style="margin:0 0 6px">Noch keine Aufträge. Tippe „＋ Neuer Auftrag".</p>'; return; }
+      el.innerHTML=list.map(o=>{ const s=ostateOf(o.status);
+        return `<div class="ordcard" data-id="${o.id}" style="${isDone(o)?'opacity:.6':''}">
+          <div class="or1"><span class="onm">${esc(o.customer||'Ohne Namen')}</span>
+          <span class="ordpill" style="background:${s.color}">${esc(s.label)}</span></div>
+          <div class="ometa">${o.packageName?esc(o.packageName):''}${o.price?' · '+money(o.price):''}${o.date?' · 🎥 '+esc(fmtDate(o.date)):''}</div></div>`;
+      }).join('');
+      el.querySelectorAll('.ordcard').forEach(c=>c.onclick=()=>openOrder(c.dataset.id));
+    }
+    function buildOrdStages(){
+      $('#ordStages').innerHTML=ORDER_STATES.map(s=>`<button type="button" data-s="${s.key}">${esc(s.label)}</button>`).join('');
+      $('#ordStages').querySelectorAll('button').forEach(b=>b.onclick=()=>{ editOrdStatus=b.dataset.s; paintOrdStages(); });
+    }
+    function paintOrdStages(){ $('#ordStages').querySelectorAll('button').forEach(b=>{
+      const on=b.dataset.s===editOrdStatus; const c=ostateOf(b.dataset.s).color;
+      b.classList.toggle('on',on); b.style.background=on?c:''; b.style.borderColor=on?c:''; }); }
+    function openOrder(id){
+      editOrdId=id||null; const o=id?orders.find(x=>x.id===id):null;
+      $('#ordTitle').textContent=o?'Auftrag bearbeiten':'Neuer Auftrag';
+      $('#ordCustomer').value=o?.customer||''; $('#ordContact').value=o?.contact||'';
+      $('#ordPrice').value=(o&&o.price!=null&&o.price!==0)?o.price:''; $('#ordAddress').value=o?.address||'';
+      $('#ordPackage').value=o?.packageName||''; $('#ordDate').value=o?.date||''; $('#ordNotes').value=o?.notes||'';
+      editOrdStatus=o?.status||'angefragt'; paintOrdStages();
+      $('#ordDeleteRow').style.display=o?'flex':'none';
+      openSheet('#orderOverlay');
+    }
+    function saveOrder(){
+      const customer=$('#ordCustomer').value.trim();
+      if(!customer && !$('#ordContact').value.trim()){ toast('Kunde oder Kontakt eingeben'); return; }
+      const now=Date.now();
+      const prev=editOrdId?(orders.find(x=>x.id===editOrdId)||{}).status:null;
+      const data={customer,contact:$('#ordContact').value.trim(),price:Number($('#ordPrice').value)||0,
+        address:$('#ordAddress').value.trim(),packageName:$('#ordPackage').value.trim(),date:$('#ordDate').value,
+        status:editOrdStatus,notes:$('#ordNotes').value.trim(),updatedAt:now};
+      if(editOrdId){ Object.assign(orders.find(x=>x.id===editOrdId),data); }
+      else{ orders.push(Object.assign({id:uid(),createdAt:now,deleted:false},data)); }
+      saveOrders(); renderOrders(); closeSheet('#orderOverlay'); maybeAutoSync();
+      if(editOrdStatus==='geliefert') popOK('Geliefert! 🎉');
+      else if(editOrdStatus==='fertig') popOK('Fertig ✅');
+      else if(editOrdStatus!==prev && prev!==null) popOK('Status: '+ostateOf(editOrdStatus).label);
+      else popOK('Gespeichert');
+    }
+    function deleteOrder(){ if(!editOrdId) return; if(!confirm('Auftrag wirklich löschen?')) return;
+      const o=orders.find(x=>x.id===editOrdId); if(o){ o.deleted=true; o.updatedAt=Date.now(); }
+      saveOrders(); renderOrders(); closeSheet('#orderOverlay'); toast('Gelöscht'); maybeAutoSync(); }
+    function notifyCustomer(){
+      const c=$('#ordContact').value.trim(); const name=$('#ordCustomer').value.trim(); const biz=getBiz();
+      const msgs={ angefragt:'danke für deine Anfrage! Ich melde mich mit einem passenden Angebot.',
+        bestaetigt:'dein Auftrag ist bestätigt ✅. Ich melde mich zum Drehtermin.',
+        drehtermin:'dein Drehtermin steht'+($('#ordDate').value?(' ('+fmtDate($('#ordDate').value)+')'):'')+' – bis dann!',
+        schnitt:'dein Material ist im Schnitt ✂️. Die Videos kommen bald.',
+        fertig:'deine Videos sind fertig ✅. Ich schicke dir gleich die Dateien/den Link.',
+        geliefert:'deine fertigen Videos sind unterwegs / hochgeladen 📤. Viel Erfolg damit!',
+        abgesagt:'der Auftrag wurde storniert. Melde dich gern jederzeit wieder.' };
+      const body='Hallo '+(name||'')+',\n\n'+(msgs[editOrdStatus]||'')+'\n\nViele Grüße\n'+(biz.name||'Veox Edits');
+      const subj='Dein Auftrag'+($('#ordPackage').value?(' – '+$('#ordPackage').value):'')+' – '+ostateOf(editOrdStatus).label.replace(/^\S+\s/,'');
+      if(!c){ toast('Kein Kontakt hinterlegt (E-Mail oder Handy)'); return; }
+      if(c.indexOf('@')>-1){ window.location.href='mailto:'+encodeURIComponent(c)+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body); }
+      else if(/\d/.test(c)){ window.open('https://wa.me/'+c.replace(/[^\d]/g,'')+'?text='+encodeURIComponent(body),'_blank'); }
+      else { toast('Kontakt sieht nicht wie E-Mail/Handy aus'); }
+    }
+    function mergeOrders(remoteArr){ const map={}; orders.forEach(o=>map[o.id]=o); let ch=false;
+      (remoteArr||[]).forEach(r=>{ if(!r||!r.id) return; const cur=map[r.id];
+        if(!cur||(r.updatedAt||0)>(cur.updatedAt||0)){ map[r.id]=r; ch=true; } });
+      orders=Object.values(map); if(ch){ saveOrders(); if(view==='rechnung') renderOrders(); } }
+
     // ---------- Teleprompter ----------
     let teleY=0, teleSpeed=60, teleRun=false, teleRAF=null, teleLast=0, teleFont=34;
     function teleFrame(ts){
@@ -1397,6 +1537,7 @@
 
     // ---------- Wire up ----------
     buildStagePicker();
+    buildOrdStages();
     seedIfEmpty();
     seedPackages();
     renderIdeen();
@@ -1442,6 +1583,12 @@
     // Rechnungen
     $('#newInvoice').onclick=()=>openInvoice(null);
     $('#bizProfile').onclick=openBiz;
+    $('#newOrder').onclick=()=>openOrder(null);
+    $('#ordCancel').onclick=()=>closeSheet('#orderOverlay');
+    $('#ordSave').onclick=saveOrder;
+    $('#ordDelete').onclick=deleteOrder;
+    $('#ordNotify').onclick=notifyCustomer;
+    $('#okPop').onclick=()=>{ $('#okPop').hidden=true; };
     $('#newPackage').onclick=()=>openPackage(null);
     $('#pkgCancel').onclick=()=>closeSheet('#packageOverlay');
     $('#pkgSave').onclick=savePackage;
