@@ -58,6 +58,10 @@
     .notes{color:var(--muted);font-size:14px;margin-top:9px;white-space:pre-wrap;word-break:break-word}
     .tagline{margin-top:8px;display:flex;flex-wrap:wrap;gap:5px}
     .tag{font-size:12px;color:var(--accent2)}
+    .linkbtn{display:inline-block;margin-top:11px;padding:8px 14px;border-radius:11px;
+      background:var(--card2);border:1px solid var(--line);color:var(--accent2);
+      font-size:13px;font-weight:700;text-decoration:none}
+    .linkbtn:active{opacity:.7}
     .empty{text-align:center;color:var(--muted);padding:60px 20px}
     .empty .big{font-size:44px}
     .fab{position:fixed;right:18px;bottom:calc(20px + env(safe-area-inset-bottom));
@@ -104,6 +108,7 @@
       <div class="topbar">
         <div class="logo">💡</div>
         <h1>Ideen</h1>
+        <button class="iconbtn" id="btnBoost" title="Ideen-Booster">✨</button>
         <button class="iconbtn" id="btnSync" title="Jetzt synchronisieren">🔄</button>
         <button class="iconbtn" id="btnSettings" title="Einstellungen">⚙️</button>
       </div>
@@ -148,6 +153,10 @@
       <div class="field">
         <label>Notizen / Skript / Hook</label>
         <textarea id="fNotes" placeholder="Idee, Hook, Ablauf, Schnitt-Notizen …"></textarea>
+      </div>
+      <div class="field">
+        <label>Link (YouTube / TikTok / Referenz)</label>
+        <input id="fLink" type="url" inputmode="url" placeholder="https://…" autocomplete="off" />
       </div>
       <div class="field">
         <label>Tags (mit Komma trennen)</label>
@@ -280,9 +289,13 @@
           </div>
           ${i.notes?`<div class="notes">${esc(i.notes.length>180?i.notes.slice(0,180)+'…':i.notes)}</div>`:''}
           ${tags.length?`<div class="tagline">${tags.map(t=>`<span class="tag">#${esc(t)}</span>`).join('')}</div>`:''}
+          ${i.link?`<a class="linkbtn" href="${esc(i.link)}" target="_blank" rel="noopener" data-stop="1">▶ Ansehen</a>`:''}
         </div>`;
       }).join('');
-      list.querySelectorAll('.card').forEach(c=>c.onclick=()=>openEditor(c.dataset.id));
+      list.querySelectorAll('.card').forEach(c=>{
+        c.querySelectorAll('[data-stop]').forEach(a=>a.addEventListener('click',e=>e.stopPropagation()));
+        c.onclick=()=>openEditor(c.dataset.id);
+      });
     }
 
     function renderAll(){ renderTabs(); renderList(); }
@@ -311,6 +324,7 @@
       $('#fTitle').value = it?.title || '';
       $('#fPlatform').value = it?.platform || '';
       $('#fNotes').value = it?.notes || '';
+      $('#fLink').value = it?.link || '';
       $('#fTags').value = (it?.tags||[]).join(', ');
       editStar = it?.priority ? 1 : 0;
       editStage = it?.stage || (filter!=='alle'?filter:'idee');
@@ -324,13 +338,14 @@
       const notes=$('#fNotes').value.trim();
       if(!title && !notes){ toast('Bitte Titel oder Notiz eingeben'); return; }
       const tags=$('#fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+      const link=$('#fLink').value.trim();
       const now=Date.now();
       if(editingId){
         const it=ideas.find(x=>x.id===editingId);
-        Object.assign(it,{title,platform:$('#fPlatform').value,notes,tags,
+        Object.assign(it,{title,platform:$('#fPlatform').value,notes,tags,link,
           priority:editStar,stage:editStage,updatedAt:now});
       }else{
-        ideas.push({id:uid(),title,platform:$('#fPlatform').value,notes,tags,
+        ideas.push({id:uid(),title,platform:$('#fPlatform').value,notes,tags,link,
           priority:editStar,stage:editStage,createdAt:now,updatedAt:now,deleted:false});
       }
       save(); renderAll(); closeSheet('#editorOverlay'); toast('Gespeichert');
@@ -444,9 +459,63 @@
       r.readAsText(file);
     }
 
+    // ---------- Seed (Beispiel-Ideen + Wissen beim ersten Start) ----------
+    function seedIfEmpty(){
+      try{
+        if(localStorage.getItem('ideen_seeded')==='1') return;
+        if(ideas.length){ localStorage.setItem('ideen_seeded','1'); return; }
+      }catch(e){ return; }
+      const now=Date.now(); let n=0;
+      const yt=q=>'https://www.youtube.com/results?search_query='+encodeURIComponent(q);
+      const tt=q=>'https://www.tiktok.com/search?q='+encodeURIComponent(q);
+      const mk=(o)=>({id:uid(),title:o.t,platform:o.p||'',stage:o.s||'idee',
+        priority:o.pr?1:0,notes:o.n||'',tags:o.tg||[],link:o.l||'',
+        createdAt:now-(n++)*1000,updatedAt:now-n*1000,deleted:false});
+      ideas=[
+        mk({t:'Reel: 3 Cut-Tricks in 30 Sekunden',p:'Reel',s:'schnitt',pr:1,n:'Hook: „Diesen Cut kennt fast keiner". J-Cut, Speed-Ramp und Whip-Pan zeigen.',tg:['tutorial','trend'],l:yt('reel editing tricks tutorial deutsch')}),
+        mk({t:'Short: Vorher/Nachher Farbkorrektur',p:'Short',s:'drehen',n:'Split-Screen: links Original, rechts gegradet. Kurz erklären.',tg:['color','beforeafter'],l:yt('color grading tutorial capcut deutsch')}),
+        mk({t:'YouTube: Mein mobiles Editing-Setup 2026',p:'YouTube',s:'idee',n:'Handy, Gimbal, Mikro, CapCut – was brauche ich wirklich?',tg:['setup']}),
+        mk({t:'TikTok: Trend-Sound + schneller Schnitt',p:'TikTok',s:'idee',n:'Aktuellen Trend-Sound raussuchen und auf den Beat schneiden.',tg:['trend']}),
+        mk({t:'📚 J-Cut & L-Cut',s:'idee',n:'Ton läuft über den Schnitt hinaus (L-Cut) oder der Ton der nächsten Szene startet früher (J-Cut). Macht Übergänge weich und professionell.',tg:['wissen'],l:yt('j cut l cut erklärt deutsch')}),
+        mk({t:'📚 Jump Cut – Tempo & Energie',s:'idee',n:'Kleine Sprünge im selben Bild → Pausen raus, Energie rein. Perfekt für Talking-Head.',tg:['wissen'],l:yt('jump cut tutorial deutsch')}),
+        mk({t:'📚 Speed Ramp',s:'idee',pr:1,n:'Von Zeitlupe schnell auf normal/schnell rampen, auf Bewegung oder Beat. In CapCut: „Kurve" bei Geschwindigkeit.',tg:['wissen'],l:tt('speed ramp capcut tutorial')}),
+        mk({t:'📚 Match Cut',s:'idee',n:'Zwei Szenen über gleiche Form/Bewegung nahtlos verbinden. Wirkt magisch und hält Zuschauer.',tg:['wissen'],l:yt('match cut tutorial')}),
+        mk({t:'📚 Der Hook (erste 3 Sekunden)',s:'idee',pr:1,n:'Starte mit Aussage, Frage oder Bewegung – kein langes Intro. Entscheidet über die Reichweite.',tg:['wissen'],l:yt('video hook erste 3 sekunden')}),
+        mk({t:'📚 B-Roll richtig einsetzen',s:'idee',n:'Zwischenschnitte, die das Gesagte zeigen. Deckt harte Schnitte ab und macht das Video lebendig.',tg:['wissen'],l:yt('b-roll tutorial deutsch')}),
+        mk({t:'📚 Beat-Sync – auf den Takt schneiden',s:'idee',n:'Cuts auf den Beat der Musik legen. In CapCut Beats automatisch markieren, dann schneiden.',tg:['wissen'],l:tt('beat sync edit capcut')}),
+        mk({t:'📚 CapCut Basics (mobiler Schnitt)',s:'idee',n:'Kostenlos auf Handy/iPad – perfekt für Reels, Shorts & TikTok. Grundlagen einmal durchgehen.',tg:['wissen'],l:yt('capcut tutorial für anfänger deutsch')}),
+      ];
+      save();
+      try{ localStorage.setItem('ideen_seeded','1'); }catch(e){}
+    }
+
+    // ---------- Ideen-Booster (offline, ohne KI-Kosten) ----------
+    const BOOST={
+      hooks:['Diesen Fehler machen 90 %…','Niemand zeigt dir das…','In 30 Sekunden erklärt:',
+        'Stop scrolling – das musst du sehen','3 Dinge, die dein Video sofort besser machen',
+        'POV: dein erster viraler Cut','Das ändert alles an deinem Schnitt'],
+      topics:['J-Cut & L-Cut','Speed Ramp','Farbkorrektur','Beat-Sync Schnitt','B-Roll clever nutzen',
+        'saubere Übergänge','Sounddesign','Text-Animation','der perfekte Hook','Retention halten',
+        'Jump Cut','Match Cut'],
+      formats:['Reel','Short','TikTok','YouTube']
+    };
+    const pick=(a)=>a[Math.floor(Math.random()*a.length)];
+    function boost(){
+      const f=pick(BOOST.formats),t=pick(BOOST.topics),h=pick(BOOST.hooks);
+      openEditor(null);
+      $('#fTitle').value=f+': '+t;
+      $('#fPlatform').value=f;
+      $('#fNotes').value='Hook (0–3 s): „'+h+'"\nInhalt: '+t+' zeigen – kurz, konkret, eine klare Aussage.\nSchnitt: schnelle Cuts, auf den Beat, Untertitel einblenden.\nCTA: „Folgen für mehr '+t+'".';
+      $('#fTags').value='booster';
+      editStage='idee'; paintStagePicker();
+      toast('Neuer Vorschlag ✨ – anpassen & speichern');
+    }
+
     // ---------- Wire up ----------
     buildStagePicker();
+    seedIfEmpty();
     renderAll();
+    $('#btnBoost').onclick=boost;
 
     $('#fab').onclick=()=>openEditor(null);
     $('#editSave').onclick=saveEditor;
