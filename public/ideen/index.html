@@ -226,6 +226,16 @@
     .checklist .ci input[type=checkbox]{width:auto;transform:scale(1.25);flex:0 0 auto}
     .checklist .ci input[type=text]{flex:1}
     .checklist .ci .del{flex:0 0 auto;color:var(--muted);font-size:18px;padding:0 4px}
+    #capMic.rec{background:var(--danger);border-color:var(--danger);color:#fff}
+    .captbl-wrap{overflow-x:auto;margin:6px 0 2px}
+    .captbl{width:100%;border-collapse:collapse;font-size:13.5px}
+    .captbl th,.captbl td{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+    .captbl th{color:var(--muted);font-weight:700;font-size:12px}
+    .captbl td.c{text-align:center;width:34px}
+    .captbl input[type=checkbox]{width:auto;transform:scale(1.25)}
+    .captbl .pl{font-size:11px;font-weight:700;color:var(--accent2)}
+    .captbl .stg{display:inline-block;font-size:11px;font-weight:700;color:#fff;padding:1px 7px;border-radius:999px}
+    .captbl .tg{color:var(--accent2);font-size:12px}
     /* teleprompter */
     .tele{position:fixed;inset:0;z-index:70;background:#000;display:flex;flex-direction:column}
     .teleScrollWrap{flex:1;overflow:hidden;position:relative}
@@ -246,6 +256,7 @@
       <div class="topbar">
         <div class="logo">💡</div>
         <h1 id="viewTitle">Ideen</h1>
+        <button class="iconbtn" id="btnCapture" title="Schnell-Erfassung (sprechen/tippen)">⚡</button>
         <button class="iconbtn" id="btnBoost" title="Ideen-Booster">✨</button>
         <button class="iconbtn" id="btnSync" title="Jetzt synchronisieren">🔄</button>
         <button class="iconbtn" id="btnSettings" title="Einstellungen">⚙️</button>
@@ -537,6 +548,27 @@
       <button id="invViewPrint">🖨 Drucken / Als PDF speichern</button>
     </div>
     <div class="invview-scroll"><div id="invoicePrint" class="paper"></div></div>
+  </div>
+
+  <!-- Schnell-Erfassung -->
+  <div class="overlay" id="captureOverlay">
+    <div class="sheet">
+      <h2>⚡ Schnell-Erfassung</h2>
+      <p class="hint">Sprich oder tippe alle Ideen einfach hintereinander rein – der Algorithmus sortiert sie automatisch in eine Tabelle. (Neue Idee je Zeile oder mit „.", „-", „•" trennen.)</p>
+      <div class="field">
+        <textarea id="capText" style="min-height:120px" placeholder="z.B. Reel über 3 Cut-Tricks, YouTube Video Editing-Setup drehen, TikTok Trend-Sound schneiden #trend …"></textarea>
+        <div class="btnrow" style="margin-top:8px">
+          <button class="btn ghost" id="capMic" type="button">🎤 Diktieren</button>
+          <button class="btn primary" id="capSort" type="button">Sortieren →</button>
+        </div>
+        <p class="hint" id="capMicHint" style="margin-top:6px"></p>
+      </div>
+      <div id="capResult"></div>
+      <div class="btnrow" id="capActions" style="display:none">
+        <button class="btn ghost" id="capCancel">Schließen</button>
+        <button class="btn primary" id="capSave">✓ Ausgewählte übernehmen</button>
+      </div>
+    </div>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -1298,6 +1330,71 @@
     }
     function teleClose(){ teleRun=false; if(teleRAF) cancelAnimationFrame(teleRAF); $('#teleOverlay').hidden=true; }
 
+    // ---------- Schnell-Erfassung (sprechen/tippen → sortieren) ----------
+    let capItems=[], capRec=null, capRecOn=false;
+    const PLAT=[[/\breels?\b/i,'Reel'],[/\bshorts?\b/i,'Short'],[/tik[\s-]?tok/i,'TikTok'],
+      [/\byou[\s-]?tube\b|\byt\b/i,'YouTube'],[/\bstor(y|ies)\b/i,'Story'],[/\bpodcast\b/i,'Podcast'],
+      [/\bfoto\b|\bpost\b|\bbild\b/i,'Foto/Post']];
+    const STG=[[/fertig|gepostet|posted|hochgeladen|online/i,'fertig'],
+      [/schnitt|schneid|cutt|\bcut\b|editier/i,'schnitt'],
+      [/dreh|filmen|aufnehmen|aufnahme|shoot/i,'drehen'],
+      [/skript|script|drehbuch|konzept|text schreiben/i,'skript']];
+    function capParse(raw){
+      let text=(raw||'').trim(); if(!text) return [];
+      let parts=text.split(/\r?\n|[••]|;/).map(s=>s.trim()).filter(Boolean);
+      if(parts.length<=1) parts=text.split(/(?:\.\s+)|,\s+| und /i).map(s=>s.trim()).filter(Boolean);
+      const seen={}, out=[];
+      parts.forEach(p=>{
+        p=p.replace(/^\s*[-–]\s*/,'').replace(/^\d+[.)]\s*/,'').trim();
+        if(p.length<2) return; const key=p.toLowerCase(); if(seen[key]) return; seen[key]=1;
+        const tags=(p.match(/#[\wäöüÄÖÜß]+/g)||[]).map(t=>t.slice(1));
+        let plat=''; for(const kv of PLAT){ if(kv[0].test(p)){plat=kv[1];break;} }
+        let stage='idee'; for(const kv of STG){ if(kv[0].test(p)){stage=kv[1];break;} }
+        let title=p.replace(/#[\wäöüÄÖÜß]+/g,'').replace(/\s+/g,' ').trim();
+        if(title) title=title.charAt(0).toUpperCase()+title.slice(1);
+        if(title.length>90) title=title.slice(0,88)+'…';
+        out.push({title:title||p,platform:plat,stage,tags,notes:p,include:true});
+      });
+      return out;
+    }
+    function renderCapResult(){
+      if(!capItems.length){ $('#capResult').innerHTML='<p class="hint">Nichts erkannt – tippe/sprich etwas und dann „Sortieren".</p>'; $('#capActions').style.display='none'; return; }
+      const rows=capItems.map((it,i)=>{ const st=stageOf(it.stage);
+        return `<tr><td class="c"><input type="checkbox" data-i="${i}" ${it.include?'checked':''}></td>
+          <td>${esc(it.title)}${it.tags.length?`<div class="tg">${it.tags.map(t=>'#'+esc(t)).join(' ')}</div>`:''}</td>
+          <td class="pl">${esc(it.platform||'—')}</td>
+          <td><span class="stg" style="background:${st.color}">${esc(st.label)}</span></td></tr>`;
+      }).join('');
+      $('#capResult').innerHTML='<div class="captbl-wrap"><table class="captbl"><thead><tr><th></th><th>Idee</th><th>Format</th><th>Phase</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+      $('#capResult').querySelectorAll('input[type=checkbox]').forEach(cb=>cb.onchange=()=>{capItems[+cb.dataset.i].include=cb.checked;});
+      $('#capActions').style.display='flex';
+    }
+    function capSortNow(){ capItems=capParse($('#capText').value); renderCapResult(); if(!capItems.length) toast('Nichts erkannt'); }
+    function capSaveNow(){
+      const chosen=capItems.filter(x=>x.include); if(!chosen.length){ toast('Nichts ausgewählt'); return; }
+      const now=Date.now(); let k=0;
+      chosen.forEach(it=>{ ideas.push({id:uid(),title:it.title,platform:it.platform,notes:it.notes,
+        tags:it.tags,link:'',date:'',checklist:[],priority:0,stage:it.stage,
+        createdAt:now-(k++),updatedAt:now-k,deleted:false}); });
+      save(); renderIdeen(); if(view==='uebersicht') renderUebersicht();
+      if(capRecOn){ try{capRec.stop();}catch(e){} }
+      closeSheet('#captureOverlay'); toast(chosen.length+' Ideen übernommen ✓'); maybeAutoSync();
+    }
+    function capMicToggle(){
+      const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+      if(!SR){ $('#capMicHint').textContent='Diktat wird hier nicht unterstützt – bitte tippen. Tipp: Auf dem iPhone/iPad das Mikrofon der Bildschirm-Tastatur nutzen.'; return; }
+      if(capRecOn){ try{capRec.stop();}catch(e){} return; }
+      capRec=new SR(); capRec.lang='de-DE'; capRec.interimResults=false; capRec.continuous=true;
+      capRec.onresult=(e)=>{ let t=''; for(let i=e.resultIndex;i<e.results.length;i++) t+=e.results[i][0].transcript+' ';
+        const ta=$('#capText'); ta.value=(ta.value?ta.value.replace(/\s*$/,'')+'\n':'')+t.trim(); };
+      capRec.onerror=(e)=>{ $('#capMicHint').textContent='Mikrofon nicht erlaubt oder Fehler – bitte in den Browser-Einstellungen erlauben.'; };
+      capRec.onend=()=>{ capRecOn=false; $('#capMic').classList.remove('rec'); $('#capMic').textContent='🎤 Diktieren'; };
+      try{ capRec.start(); capRecOn=true; $('#capMic').classList.add('rec'); $('#capMic').textContent='⏹ Stopp';
+        $('#capMicHint').textContent='Sprich jetzt … dann auf „Stopp" tippen.'; }catch(e){}
+    }
+    function openCapture(){ $('#capText').value=''; $('#capResult').innerHTML=''; $('#capActions').style.display='none';
+      $('#capMicHint').textContent=''; capItems=[]; openSheet('#captureOverlay'); setTimeout(()=>$('#capText').focus(),80); }
+
     // ---------- Wire up ----------
     buildStagePicker();
     seedIfEmpty();
@@ -1309,6 +1406,11 @@
     document.querySelectorAll('.navbtn').forEach(b=>b.onclick=()=>setView(b.dataset.view));
     $('#fab').onclick=()=>openEditor(null);
     $('#btnBoost').onclick=boost;
+    $('#btnCapture').onclick=openCapture;
+    $('#capMic').onclick=capMicToggle;
+    $('#capSort').onclick=capSortNow;
+    $('#capCancel').onclick=()=>{ if(capRecOn){try{capRec.stop();}catch(e){}} closeSheet('#captureOverlay'); };
+    $('#capSave').onclick=capSaveNow;
     $('#editSave').onclick=saveEditor;
     $('#editCancel').onclick=()=>closeSheet('#editorOverlay');
     $('#editDelete').onclick=deleteEditor;

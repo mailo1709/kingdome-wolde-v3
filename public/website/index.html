@@ -216,17 +216,18 @@
         <div>© <span id="year"></span> · Alle Rechte vorbehalten</div>
       </div>
       <div class="impressum">
-        <strong>Impressum</strong> (Name &amp; Adresse bitte noch ergänzen – in Deutschland Pflicht):<br>
-        [Dein Name / Firmenname] · [Straße Nr.] · [PLZ Ort]<br>
+        <strong>Impressum</strong> (Angaben gemäß § 5 TMG):<br>
+        <span id="impName">–</span> · <span id="impAddr">–</span><br>
         E-Mail: <a id="impEmail" href="#">–</a> · Instagram: <a id="impInsta" href="#" target="_blank" rel="noopener">–</a> · TikTok: <a id="impTikTok" href="#" target="_blank" rel="noopener">–</a><br>
-        USt-IdNr./Steuernr.: [falls vorhanden]. Verantwortlich für den Inhalt gemäß § 55 Abs. 2 RStV: [Name].
+        <span id="impTax"></span>Verantwortlich für den Inhalt gemäß § 55 Abs. 2 RStV: <span id="impResp">–</span>.
       </div>
     </div>
   </footer>
 
+  <script src="config.js"></script>
   <script>
   /* Eigenständige Daten – diese Website funktioniert allein (überall hochladbar).
-     Preise & Texte hier direkt ändern. */
+     Preise & Texte hier direkt ändern. Kontakt/Impressum: siehe config.js */
   window.APP_CONTENT = {
 
     /* ====================================================================
@@ -326,6 +327,15 @@
     var C = window.APP_CONTENT || {};
     var S = C.STUDIO || {name:'Dein Video-Studio',slogan:'',about:'',services:[],steps:[]};
     var P = C.PACKAGES || [];
+
+    // Einstellungen aus config.js übernehmen (dort selbst änderbar)
+    var CFG = window.VEOX_CONFIG || {};
+    if(CFG.brand) S.name = CFG.brand;
+    if(CFG.slogan) S.slogan = CFG.slogan;
+    C.CONTACT = C.CONTACT || {};
+    if('email' in CFG) C.CONTACT.email = CFG.email;
+    if('instagram' in CFG) C.CONTACT.instagram = CFG.instagram;
+    if('tiktok' in CFG) C.CONTACT.tiktok = CFG.tiktok;
     var esc = function(s){return (s==null?'':String(s)).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);});};
     var eur = function(n){return (Number(n)||0).toLocaleString('de-DE',{style:'currency',currency:'EUR',minimumFractionDigits:0});};
 
@@ -358,6 +368,15 @@
     if(impT){ if(CT.tiktok){ var tt3 = String(CT.tiktok).replace(/^@/,'');
         impT.textContent = '@'+tt3; impT.href = 'https://www.tiktok.com/@'+tt3; }
       else { impT.textContent = '[TikTok]'; impT.removeAttribute('href'); } }
+
+    // Impressum: Name & Adresse aus config.js
+    var setTxt = function(id, val){ var el=document.getElementById(id); if(el) el.textContent = val; };
+    var nm = CFG.impressumName || '[Name]';
+    var addr = [CFG.impressumStreet, CFG.impressumCity].filter(function(x){return x;}).join(', ') || '[Straße Nr. · PLZ Ort]';
+    setTxt('impName', nm);
+    setTxt('impAddr', addr);
+    setTxt('impResp', nm);
+    setTxt('impTax', CFG.impressumTaxId ? ('USt-IdNr./Steuernr.: ' + CFG.impressumTaxId + '. ') : '');
 
     document.getElementById('services').innerHTML = (S.services||[]).map(function(s){
       return '<div class="svc"><div class="ic">'+esc(s.icon)+'</div><h3>'+esc(s.title)+'</h3><p>'+esc(s.text)+'</p></div>';
