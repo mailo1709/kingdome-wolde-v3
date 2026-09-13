@@ -101,6 +101,15 @@
     .asset .an{font-weight:700;color:var(--accent2)}
     .asset .ad{display:block;color:var(--muted);margin-top:3px;font-size:13px;line-height:1.45}
     .catnote{color:var(--muted);font-size:13px;margin:2px 0 10px;line-height:1.45}
+    .mediaitem{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:11px 12px;margin-bottom:9px}
+    .mediaitem .mh{display:flex;align-items:center;gap:9px}
+    .mediaitem .mic{width:34px;height:34px;flex:0 0 auto;border-radius:9px;background:var(--card2);display:grid;place-items:center;font-size:18px}
+    .mediaitem .mn{flex:1;min-width:0;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .mediaitem .msz{color:var(--muted);font-size:12px;flex:0 0 auto}
+    .mediaitem .mdel{flex:0 0 auto;color:var(--danger);font-size:16px;padding:2px 6px}
+    .mediaitem .mprev{margin-top:9px}
+    .mediaitem .mprev video,.mediaitem .mprev audio,.mediaitem .mprev img{width:100%;border-radius:9px;display:block;background:#000}
+    .mediaitem .mprev img{max-height:220px;object-fit:contain}
     /* modal */
     .overlay{position:fixed;inset:0;background:rgba(6,4,14,.72);z-index:40;
       display:none;align-items:flex-end;justify-content:center}
@@ -335,9 +344,20 @@
       <div class="list" id="invoiceList"></div>
     </section>
 
-    <!-- ASSETS -->
+    <!-- ASSETS / MEDIATHEK -->
     <section id="viewAssets" hidden>
-      <p class="intro">Kostenlose Musik, Soundeffekte, Bilder, Videos & Schriften. Alles legal nutzbar – <b>Lizenzhinweis pro Datei beachten</b> (manche wollen eine Namensnennung).</p>
+      <div class="sectionhead" style="margin-top:14px">📥 Meine Mediathek (offline)</div>
+      <p class="catnote">Eigene Videos, Sounds & Bilder direkt im Gerät speichern – <b>komplett offline</b> abrufbar, auch ohne Internet. (Nichts wird hochgeladen.)</p>
+      <div class="btnrow">
+        <button class="btn primary" id="mediaImport">＋ Dateien importieren</button>
+        <button class="btn ghost" id="mediaRefresh" style="flex:0 0 auto;padding:13px 16px" title="Aktualisieren">↻</button>
+      </div>
+      <input type="file" id="mediaFile" accept="video/*,audio/*,image/*" multiple style="display:none" />
+      <p class="hint" id="mediaUsage" style="margin:8px 0 0"></p>
+      <div id="myMediaList" style="margin-top:12px"></div>
+
+      <div class="sectionhead" style="margin-top:26px">🌐 Kostenlose Online-Quellen</div>
+      <p class="catnote">Nachschub, wenn du online bist – legal & gratis (Lizenz pro Datei beachten).</p>
       <div id="assetsList"></div>
     </section>
   </div>
@@ -706,7 +726,7 @@
       if(v==='rechnung'){ renderOrders(); renderPackages(); renderInvoices(); }
       if(v==='lernen') renderGuides();
       if(v==='glossar') renderGlossar();
-      if(v==='assets') renderAssets();
+      if(v==='assets'){ renderAssets(); renderMyMedia(); }
       window.scrollTo(0,0);
     }
 
@@ -879,6 +899,61 @@
             ${g.where?`<div class="gwhere"><b>In der App:</b> ${esc(g.where)}</div>`:''}
           </div></details>`
       ).join('') : `<div class="empty"><div class="big">🔍</div><p>Kein Begriff gefunden.</p></div>`;
+    }
+
+    // ---------- Offline-Mediathek (eigene Dateien, IndexedDB) ----------
+    let _db=null;
+    function idb(){ return new Promise((res,rej)=>{ if(_db) return res(_db);
+      const r=indexedDB.open('veox_media',1);
+      r.onupgradeneeded=()=>{ const db=r.result; if(!db.objectStoreNames.contains('files')) db.createObjectStore('files',{keyPath:'id'}); };
+      r.onsuccess=()=>{ _db=r.result; res(_db); }; r.onerror=()=>rej(r.error); }); }
+    function idbAdd(rec){ return idb().then(db=>new Promise((res,rej)=>{ const tx=db.transaction('files','readwrite'); tx.objectStore('files').put(rec); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); })); }
+    function idbAll(){ return idb().then(db=>new Promise((res,rej)=>{ const out=[]; const tx=db.transaction('files','readonly'); const cur=tx.objectStore('files').openCursor();
+      cur.onsuccess=(e)=>{ const c=e.target.result; if(c){ const v=c.value; out.push({id:v.id,name:v.name,kind:v.kind,mime:v.mime,size:v.size,createdAt:v.createdAt}); c.continue(); } else res(out); }; cur.onerror=()=>rej(cur.error); })); }
+    function idbGet(id){ return idb().then(db=>new Promise((res,rej)=>{ const tx=db.transaction('files','readonly'); const g=tx.objectStore('files').get(id); g.onsuccess=()=>res(g.result); g.onerror=()=>rej(g.error); })); }
+    function idbDel(id){ return idb().then(db=>new Promise((res,rej)=>{ const tx=db.transaction('files','readwrite'); tx.objectStore('files').delete(id); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); })); }
+    function kindOf(mime){ mime=mime||''; if(mime.indexOf('video')===0) return 'video'; if(mime.indexOf('audio')===0) return 'audio'; if(mime.indexOf('image')===0) return 'image'; return 'file'; }
+    function fmtSize(b){ b=b||0; if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(0)+' KB'; if(b<1073741824) return (b/1048576).toFixed(1)+' MB'; return (b/1073741824).toFixed(2)+' GB'; }
+    let _mediaUrls=[];
+    function revokeMediaUrls(){ _mediaUrls.forEach(u=>{ try{URL.revokeObjectURL(u);}catch(e){} }); _mediaUrls=[]; }
+    async function importMedia(files){
+      if(!files||!files.length) return;
+      let n=0;
+      for(const f of files){
+        try{ await idbAdd({id:uid(),name:f.name||'Datei',kind:kindOf(f.type),mime:f.type||'',size:f.size||0,createdAt:Date.now(),blob:f}); n++; }
+        catch(e){ toast('Speichern fehlgeschlagen (Speicher voll?)'); }
+      }
+      if(n) toast(n+' Datei(en) offline gespeichert ✓');
+      renderMyMedia();
+    }
+    async function renderMyMedia(){
+      const el=$('#myMediaList'); if(!el) return;
+      revokeMediaUrls();
+      if(!('indexedDB' in window)){ el.innerHTML='<p class="hint" style="margin:0">Offline-Speicher wird auf diesem Gerät nicht unterstützt.</p>'; return; }
+      let items=[];
+      try{ items=await idbAll(); }catch(e){ el.innerHTML='<p class="hint" style="margin:0">Konnte Mediathek nicht laden.</p>'; return; }
+      // Speicher-Anzeige
+      try{ if(navigator.storage&&navigator.storage.estimate){ const es=await navigator.storage.estimate();
+        $('#mediaUsage').textContent='Belegt: '+fmtSize(es.usage||0)+(es.quota?(' von ~'+fmtSize(es.quota)):''); } }catch(e){}
+      if(!items.length){ el.innerHTML='<p class="hint" style="margin:0">Noch nichts gespeichert. Tippe „＋ Dateien importieren".</p>'; return; }
+      items.sort((a,b)=>b.createdAt-a.createdAt);
+      const ic={video:'🎬',audio:'🎵',image:'🖼️',file:'📄'};
+      el.innerHTML=items.map(m=>`<div class="mediaitem" data-id="${m.id}">
+        <div class="mh"><div class="mic">${ic[m.kind]||'📄'}</div>
+          <div class="mn">${esc(m.name)}</div><div class="msz">${fmtSize(m.size)}</div>
+          <button class="mdel" data-del="${m.id}" title="Löschen">🗑️</button></div>
+        <div class="mprev" data-prev="${m.id}"><button class="btn ghost" data-open="${m.id}" style="padding:8px;font-size:13px">▶ Vorschau</button></div>
+      </div>`).join('');
+      el.querySelectorAll('.mdel').forEach(b=>b.onclick=async()=>{ if(confirm('Datei löschen?')){ await idbDel(b.dataset.del); renderMyMedia(); } });
+      el.querySelectorAll('[data-open]').forEach(b=>b.onclick=async()=>{
+        const rec=await idbGet(b.dataset.open); if(!rec||!rec.blob) return;
+        const url=URL.createObjectURL(rec.blob); _mediaUrls.push(url);
+        const box=el.querySelector('[data-prev="'+b.dataset.open+'"]'); const k=rec.kind;
+        box.innerHTML = k==='video' ? '<video src="'+url+'" controls playsinline></video>'
+          : k==='audio' ? '<audio src="'+url+'" controls></audio>'
+          : k==='image' ? '<img src="'+url+'" alt="">'
+          : '<a class="linkbtn" href="'+url+'" download="'+esc(rec.name)+'">⬇︎ '+esc(rec.name)+'</a>';
+      });
     }
 
     // ---------- Assets ----------
@@ -1103,6 +1178,15 @@
         mk({t:'📚 Speed Ramp',s:'idee',pr:1,n:'Von Zeitlupe schnell auf normal/schnell rampen, auf Bewegung oder Beat. In CapCut: „Kurve" bei Geschwindigkeit.',tg:['wissen'],l:tt('speed ramp capcut tutorial')}),
         mk({t:'📚 Der Hook (erste 3 Sekunden)',s:'idee',pr:1,n:'Starte mit Aussage, Frage oder Bewegung – kein langes Intro. Entscheidet über die Reichweite.',tg:['wissen'],l:yt('video hook erste 3 sekunden')}),
         mk({t:'📚 CapCut Basics (mobiler Schnitt)',s:'idee',n:'Kostenlos auf Handy/iPad – perfekt für Reels, Shorts & TikTok. Siehe Tab „Lernen".',tg:['wissen'],l:yt('capcut tutorial für anfänger deutsch')}),
+        mk({t:'Reel: Velocity-Edit zu Trend-Sound',p:'Reel',s:'idee',n:'Clips auf den Beat mit Speed-Ramps schneiden. Aktuellen Trend-Sound nehmen.',tg:['trend','velocity']}),
+        mk({t:'Short: 3 Fehler die Anfänger beim Schnitt machen',p:'Short',s:'idee',n:'Schnelle Aufzählung, Hook: „Diese 3 Fehler kosten dich Reichweite".',tg:['tipps']}),
+        mk({t:'TikTok: Übergang-Trick (Clean Transition)',p:'TikTok',s:'idee',n:'Einen sauberen Übergang Schritt für Schritt zeigen.',tg:['transition','trend']}),
+        mk({t:'YouTube: „Ein Tag als Content Creator"',p:'YouTube',s:'idee',n:'Vlog-Style, B-Roll sammeln, Storytelling.',tg:['vlog']}),
+        mk({t:'Reel: Vorher/Nachher Farbkorrektur',p:'Reel',s:'idee',n:'Split-Screen, roher Clip vs. gegradet.',tg:['color','beforeafter']}),
+        mk({t:'Short: Bester Gratis-Sound für Edits',p:'Short',s:'idee',n:'Auf die Mediathek/Assets verweisen. Schnell & nützlich.',tg:['audio']}),
+        mk({t:'Reel: Motorrad-Content (Ziel-Vibe) 🏍️',p:'Reel',s:'idee',pr:1,n:'Sobald das Bike da ist: cinematische Ride-Shots, Sound im Fokus. Traum-Projekt!',tg:['motorrad','cinematic']}),
+        mk({t:'TikTok: „So schneide ich ein Reel in 5 Min"',p:'TikTok',s:'idee',n:'Speed-Run durch den Schnitt, Screen-Recording + Voice.',tg:['tutorial']}),
+        mk({t:'Kunden-Testimonial als Reel',p:'Reel',s:'idee',n:'Zufriedene Kunden kurz zu Wort kommen lassen – Social Proof für Veox Edits.',tg:['business']}),
       ];
       save();
       try{ localStorage.setItem('ideen_seeded','1'); }catch(e){}
@@ -1583,6 +1667,9 @@
     // Rechnungen
     $('#newInvoice').onclick=()=>openInvoice(null);
     $('#bizProfile').onclick=openBiz;
+    $('#mediaImport').onclick=()=>$('#mediaFile').click();
+    $('#mediaRefresh').onclick=()=>renderMyMedia();
+    $('#mediaFile').onchange=(e)=>{ const fs=Array.from(e.target.files||[]); e.target.value=''; importMedia(fs); };
     $('#newOrder').onclick=()=>openOrder(null);
     $('#ordCancel').onclick=()=>closeSheet('#orderOverlay');
     $('#ordSave').onclick=saveOrder;
