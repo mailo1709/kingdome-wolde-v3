@@ -179,6 +179,18 @@
   /* Eigenständige Daten – diese Website funktioniert allein (überall hochladbar).
      Preise & Texte hier direkt ändern. */
   window.APP_CONTENT = {
+
+    /* ====================================================================
+       >>> HIER DEINE KONTAKTDATEN ÄNDERN <<<
+       Einfach die Werte zwischen den Anführungszeichen ersetzen.
+       - email:      deine E-Mail-Adresse (leer lassen "" = Button wird ausgeblendet)
+       - instagram:  dein Instagram-Name OHNE @ (leer "" = Button wird ausgeblendet)
+       ==================================================================== */
+    CONTACT: {
+      email: 'deine@email.de',
+      instagram: 'deinusername',
+    },
+
     STUDIO: {
       name: 'Dein Video-Studio',
       slogan: 'Content, der den Daumen stoppt.',
@@ -246,6 +258,14 @@
     document.getElementById('slogan').textContent = S.slogan || 'Content, der auffällt.';
     document.getElementById('about').textContent = S.about || '';
     document.getElementById('year').textContent = new Date().getFullYear();
+
+    var CT = C.CONTACT || {};
+    var mailBtn = document.getElementById('mailBtn');
+    if(CT.email){ mailBtn.href = 'mailto:'+CT.email+'?subject=Anfrage%20Videoschnitt'; mailBtn.style.display=''; }
+    else { mailBtn.style.display='none'; }
+    var igBtn = document.getElementById('igBtn');
+    if(CT.instagram){ var ig=String(CT.instagram).replace(/^@/,''); igBtn.href='https://instagram.com/'+ig; igBtn.style.display=''; }
+    else { igBtn.style.display='none'; }
 
     document.getElementById('services').innerHTML = (S.services||[]).map(function(s){
       return '<div class="svc"><div class="ic">'+esc(s.icon)+'</div><h3>'+esc(s.title)+'</h3><p>'+esc(s.text)+'</p></div>';
