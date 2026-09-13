@@ -140,6 +140,18 @@
     .invcard .imeta{color:var(--muted);font-size:13px;margin-top:4px}
     .ipill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid var(--line)}
     .ipill.offen{color:var(--warn)} .ipill.bezahlt{color:var(--good)}
+    .pkggrouphd{font-size:13px;font-weight:800;color:var(--accent2);margin:14px 0 8px}
+    .pkgcard{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:11px 13px;
+      margin-bottom:8px;display:flex;gap:10px;align-items:center;cursor:pointer}
+    .pkgcard.pop{border-color:var(--accent)}
+    .pkgcard .pinfo{flex:1;min-width:0}
+    .pkgcard .pn{font-weight:700}
+    .pkgcard .pn .popstar{color:var(--accent2);font-size:12px;margin-left:6px}
+    .pkgcard .pd{color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .pkgcard .pprice{font-weight:800;white-space:nowrap;text-align:right}
+    .pkgcard .pprice small{display:block;color:var(--muted);font-size:11px;font-weight:600}
+    .pkgcard .toinv{flex:0 0 auto;background:var(--card2);border:1px solid var(--line);color:var(--accent2);
+      border-radius:9px;padding:8px 9px;font-size:12px;font-weight:700}
     .invitem{display:flex;gap:7px;margin-bottom:7px;align-items:center}
     .invitem input.d{flex:1;min-width:0} .invitem input.q{width:56px;flex:0 0 auto;text-align:center}
     .invitem input.p{width:82px;flex:0 0 auto;text-align:right} .invitem .del{flex:0 0 auto;color:var(--muted);font-size:18px;padding:0 3px}
@@ -269,9 +281,15 @@
       <div id="glossarList" style="margin-top:12px"></div>
     </section>
 
-    <!-- RECHNUNG -->
+    <!-- RECHNUNG / BUSINESS -->
     <section id="viewRechnung" hidden>
-      <div class="btnrow" style="margin-top:14px">
+      <div class="sectionhead" style="margin-top:16px">📦 Angebote &amp; Preise</div>
+      <p class="catnote">Deine Pakete – antippen zum Bearbeiten. „→ Rechnung" erstellt daraus direkt eine Rechnung. (Beispielpreise, frei änderbar.)</p>
+      <div id="packageList"></div>
+      <button class="btn ghost" id="newPackage" style="margin-top:6px;padding:11px">＋ Paket / Angebot</button>
+
+      <div class="sectionhead" style="margin-top:24px">🧾 Rechnungen</div>
+      <div class="btnrow">
         <button class="btn primary" id="newInvoice">＋ Neue Rechnung</button>
         <button class="btn ghost" id="bizProfile" style="flex:0 0 auto;padding:13px 16px">🏢 Firmendaten</button>
       </div>
@@ -457,6 +475,27 @@
     </div>
   </div>
 
+  <!-- Paket / Angebot -->
+  <div class="overlay" id="packageOverlay">
+    <div class="sheet">
+      <h2 id="pkgTitle">Paket / Angebot</h2>
+      <div class="field"><label>Name</label><input id="pkgName" placeholder="z.B. Creator-Paket" /></div>
+      <div class="field"><label>Gruppe</label><input id="pkgGroup" placeholder="z.B. 🎬 Kurzvideos" /></div>
+      <div class="field two">
+        <div><label>Preis (€)</label><input id="pkgPrice" type="number" inputmode="decimal" /></div>
+        <div><label>Einheit</label><input id="pkgUnit" placeholder="Paket, / Video, / Monat …" /></div>
+      </div>
+      <div class="field"><label>Beschreibung</label><textarea id="pkgDesc" style="min-height:56px" placeholder="Was ist enthalten?"></textarea></div>
+      <div class="field"><label>Enthält (eine Zeile pro Punkt)</label><textarea id="pkgFeatures" style="min-height:70px" placeholder="3 Videos&#10;Untertitel&#10;1 Korrekturschleife"></textarea></div>
+      <div class="btnrow">
+        <button class="btn ghost" id="pkgCancel">Abbrechen</button>
+        <button class="btn primary" id="pkgSave">Speichern</button>
+      </div>
+      <div class="btnrow"><button class="btn ghost" id="pkgToInvoice">→ Als Rechnung übernehmen</button></div>
+      <div class="btnrow" id="pkgDeleteRow" style="display:none"><button class="btn danger" id="pkgDelete">Paket löschen</button></div>
+    </div>
+  </div>
+
   <!-- Firmendaten -->
   <div class="overlay" id="bizOverlay">
     <div class="sheet">
@@ -520,7 +559,7 @@
     const C = window.APP_CONTENT || {GUIDES:[],GLOSSARY:[],ASSETS:[]};
     const LS = {
       ideas:'ideen_data', token:'ideen_gh_token', gist:'ideen_gist_id', auto:'ideen_autosync',
-      invoices:'ideen_invoices', biz:'ideen_biz'
+      invoices:'ideen_invoices', biz:'ideen_biz', packages:'ideen_packages'
     };
     const STAGES = [
       {key:'idee',    label:'💡 Idee',    color:'#8b5cf6'},
@@ -563,7 +602,7 @@
     const VIEWS = {
       ideen:{title:'Ideen', el:'#viewIdeen'},
       uebersicht:{title:'Übersicht', el:'#viewUebersicht'},
-      rechnung:{title:'Rechnungen', el:'#viewRechnung'},
+      rechnung:{title:'Angebote & Rechnungen', el:'#viewRechnung'},
       lernen:{title:'Lernen', el:'#viewLernen'},
       glossar:{title:'Glossar', el:'#viewGlossar'},
       assets:{title:'Mediathek', el:'#viewAssets'},
@@ -577,7 +616,7 @@
       document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
       try{ if(('#'+v)!==location.hash) history.replaceState(null,'','#'+v); }catch(e){}
       if(v==='uebersicht') renderUebersicht();
-      if(v==='rechnung') renderInvoices();
+      if(v==='rechnung'){ renderPackages(); renderInvoices(); }
       if(v==='lernen') renderGuides();
       if(v==='glossar') renderGlossar();
       if(v==='assets') renderAssets();
@@ -849,12 +888,13 @@
     // ---------- GitHub Gist Sync ----------
     const GIST_FILE='ideen.json';
     const INV_FILE='rechnungen.json';
-    function invPayload(){ return JSON.stringify({invoices, biz:getBiz()}, null, 2); }
+    function invPayload(){ return JSON.stringify({invoices, biz:getBiz(), packages}, null, 2); }
     async function pullInvoices(f){
       if(!f) return;
       try{ let content=f.content; if(f.truncated && f.raw_url){ content=await (await fetch(f.raw_url)).text(); }
         const parsed=JSON.parse(content);
         mergeInvoices(parsed.invoices);
+        mergePackages(parsed.packages);
         const rb=parsed.biz, lb=getBiz();
         if(rb && (rb.updatedAt||0) > (lb.updatedAt||0)){ setBiz(rb); if(view==='rechnung') renderInvoices(); }
       }catch(e){}
@@ -1148,6 +1188,79 @@
       if(changed){ saveInvoices(); if(view==='rechnung') renderInvoices(); }
     }
 
+    // ---------- Pakete / Angebote ----------
+    let packages = loadPackages(); let editPkgId=null;
+    function loadPackages(){ try{ return JSON.parse(localStorage.getItem(LS.packages))||[]; }catch(e){ return []; } }
+    function savePackages(){ try{ localStorage.setItem(LS.packages, JSON.stringify(packages)); }catch(e){} }
+    const activePkg = ()=> packages.filter(p=>!p.deleted);
+    function seedPackages(){
+      try{ if(localStorage.getItem('ideen_pkg_seeded')==='1') return;
+        if(packages.length){ localStorage.setItem('ideen_pkg_seeded','1'); return; } }catch(e){ return; }
+      const now=Date.now(); let n=0;
+      (C.PACKAGES||[]).forEach(g=>g.items.forEach(it=>{
+        packages.push({id:uid(),group:g.group,name:it.name,price:Number(it.price)||0,unit:it.unit||'',
+          desc:it.desc||'',features:it.features||[],popular:!!it.popular,
+          createdAt:now-(n++)*1000,updatedAt:now-n*1000,deleted:false});
+      }));
+      savePackages(); try{ localStorage.setItem('ideen_pkg_seeded','1'); }catch(e){}
+    }
+    function renderPackages(){
+      const el=$('#packageList'); const list=activePkg();
+      if(!list.length){ el.innerHTML='<p class="hint" style="margin:0 0 6px">Noch keine Pakete. „＋ Paket / Angebot".</p>'; return; }
+      const groups={}; const order=[];
+      list.forEach(p=>{ const g=p.group||'Weitere'; if(!groups[g]){groups[g]=[];order.push(g);} groups[g].push(p); });
+      el.innerHTML=order.map(g=>`<div class="pkggrouphd">${esc(g)}</div>`+
+        groups[g].map(p=>`<div class="pkgcard ${p.popular?'pop':''}" data-id="${p.id}">
+          <div class="pinfo"><div class="pn">${esc(p.name)}${p.popular?'<span class="popstar">★</span>':''}</div>
+            <div class="pd">${esc(p.desc||'')}</div></div>
+          <div class="pprice">${p.price>0?money(p.price):''}<small>${esc(p.unit||'')}</small></div>
+          <button class="toinv" data-inv="${p.id}" title="Als Rechnung">→ Rechnung</button>
+        </div>`).join('')
+      ).join('');
+      el.querySelectorAll('.pkgcard').forEach(c=>c.onclick=()=>openPackage(c.dataset.id));
+      el.querySelectorAll('.toinv').forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); pkgToInvoice(b.dataset.inv); });
+    }
+    function openPackage(id){
+      editPkgId=id||null; const p=id?packages.find(x=>x.id===id):null;
+      $('#pkgTitle').textContent = p?'Paket bearbeiten':'Neues Paket / Angebot';
+      $('#pkgName').value=p?.name||''; $('#pkgGroup').value=p?.group||'';
+      $('#pkgPrice').value=(p&&p.price!=null)?p.price:''; $('#pkgUnit').value=p?.unit||'';
+      $('#pkgDesc').value=p?.desc||''; $('#pkgFeatures').value=(p?.features||[]).join('\n');
+      $('#pkgDeleteRow').style.display=p?'flex':'none';
+      $('#pkgToInvoice').style.display=p?'block':'none';
+      openSheet('#packageOverlay');
+    }
+    function savePackage(){
+      const name=$('#pkgName').value.trim(); if(!name){ toast('Name eingeben'); return; }
+      const now=Date.now();
+      const data={name,group:$('#pkgGroup').value.trim()||'Weitere',price:Number($('#pkgPrice').value)||0,
+        unit:$('#pkgUnit').value.trim(),desc:$('#pkgDesc').value.trim(),
+        features:$('#pkgFeatures').value.split('\n').map(s=>s.trim()).filter(Boolean),updatedAt:now};
+      if(editPkgId){ Object.assign(packages.find(x=>x.id===editPkgId),data); }
+      else{ packages.push(Object.assign({id:uid(),popular:false,createdAt:now,deleted:false},data)); }
+      savePackages(); renderPackages(); closeSheet('#packageOverlay'); toast('Paket gespeichert'); maybeAutoSync();
+    }
+    function deletePackage(){
+      if(!editPkgId) return; if(!confirm('Paket wirklich löschen?')) return;
+      const p=packages.find(x=>x.id===editPkgId); if(p){ p.deleted=true; p.updatedAt=Date.now(); }
+      savePackages(); renderPackages(); closeSheet('#packageOverlay'); toast('Gelöscht'); maybeAutoSync();
+    }
+    function pkgToInvoice(id){
+      const p=packages.find(x=>x.id===id); if(!p) return;
+      closeSheet('#packageOverlay');
+      openInvoice(null);
+      editInvItems=[{desc:p.name+(p.desc?' – '+p.desc:''),qty:1,price:Number(p.price)||0}];
+      renderInvItems(); showInvTotal();
+      toast('Aus Paket „'+p.name+'" – Rechnung angelegt');
+    }
+    function mergePackages(remoteArr){
+      const map={}; packages.forEach(p=>map[p.id]=p); let changed=false;
+      (remoteArr||[]).forEach(r=>{ if(!r||!r.id) return; const cur=map[r.id];
+        if(!cur || (r.updatedAt||0)>(cur.updatedAt||0)){ map[r.id]=r; changed=true; } });
+      packages=Object.values(map);
+      if(changed){ savePackages(); if(view==='rechnung') renderPackages(); }
+    }
+
     // ---------- Teleprompter ----------
     let teleY=0, teleSpeed=60, teleRun=false, teleRAF=null, teleLast=0, teleFont=34;
     function teleFrame(ts){
@@ -1178,6 +1291,7 @@
     // ---------- Wire up ----------
     buildStagePicker();
     seedIfEmpty();
+    seedPackages();
     renderIdeen();
     const startView = (location.hash||'').replace('#','');
     setView(VIEWS[startView] ? startView : 'ideen');
@@ -1214,6 +1328,11 @@
     // Rechnungen
     $('#newInvoice').onclick=()=>openInvoice(null);
     $('#bizProfile').onclick=openBiz;
+    $('#newPackage').onclick=()=>openPackage(null);
+    $('#pkgCancel').onclick=()=>closeSheet('#packageOverlay');
+    $('#pkgSave').onclick=savePackage;
+    $('#pkgDelete').onclick=deletePackage;
+    $('#pkgToInvoice').onclick=()=>{ if(editPkgId) pkgToInvoice(editPkgId); };
     $('#invAddItem').onclick=()=>{ editInvItems.push({desc:'',qty:1,price:0}); renderInvItems(); showInvTotal(); };
     $('#invVat').onchange=showInvTotal;
     $('#invKlein').onchange=showInvTotal;
