@@ -861,6 +861,8 @@
 
       <!-- Panel: Effekte -->
       <div class="cut-panel" id="cutPanel-effekte" hidden>
+        <div class="cut-sub">Format (Seitenverhältnis)</div>
+        <div class="cut-chips" id="cutAspects"></div>
         <div class="cut-sub">Look / Filter</div>
         <div class="cut-chips" id="cutFilters"></div>
         <label class="cut-toggle"><input type="checkbox" id="cutFade" /> Weich ein- &amp; ausblenden (Fade)</label>
@@ -895,6 +897,10 @@
       <div class="cut-actions">
         <button id="cutExport" class="btn primary" style="flex:1"><span data-ico="download"></span> Exportieren</button>
         <button id="cutPlan" class="btn ghost" style="flex:1"><span data-ico="save"></span> Cut-Plan speichern</button>
+      </div>
+      <div class="cut-actions">
+        <button id="cutFrame" class="btn ghost" style="flex:1"><span data-ico="image"></span> Cover-Bild speichern</button>
+        <button id="cutCapcut" class="btn ghost" style="flex:1"><span data-ico="video"></span> Weiter in CapCut</button>
       </div>
       <p class="cutmsg" id="cutMsg"></p>
     </div>
@@ -1981,8 +1987,15 @@
 
     // ---------- Studio-Cutter (Timeline-Trimmer + Effekte + Sound-Remix) ----------
     let cutIn=0, cutOut=0, cutDur=0, cutURL=null, cutTimer=null, cutSelMode=false, cutFPS=30, cutExporting=false;
-    let cutFilter='', cutFade=false;
+    let cutFilter='', cutFade=false, cutAspect='orig';
     let cutMusicArr=null, cutMusicName='', cutMusicVol=0.7, cutOrigVol=1, cutMusicStart=0;
+    const CUT_ASPECTS=[
+      {key:'orig', name:'Original', ar:0},
+      {key:'9:16', name:'9:16 Hoch', ar:9/16},
+      {key:'1:1', name:'1:1 Quadrat', ar:1},
+      {key:'16:9', name:'16:9 Breit', ar:16/9},
+      {key:'4:5', name:'4:5 Feed', ar:4/5},
+    ];
     let cutMusicPrevAudio=null, cutMusicPrevURL=null;
     // Look-/Filter-Presets (funktionieren als CSS- UND Canvas-Filter → auch im Export)
     const CUT_FILTERS=[
@@ -2023,7 +2036,7 @@
     function cutUpdatePlayhead(){ const v=$('#cutVid'); $('#cutPlayhead').style.left=cutPct(v.currentTime||0)+'%'; $('#cutCur').textContent=fmtClock(v.currentTime||0); }
     function openCutter(){
       $('#cutterOverlay').hidden=false;
-      renderCutFilters(); renderVibes(); populateMusicSelect(); switchCutPanel('schnitt');
+      renderCutFilters(); renderCutAspects(); renderVibes(); populateMusicSelect(); switchCutPanel('schnitt');
       if(cutExportSupported()) cutMsg('Trimmen mit den Griffen, unter „Effekte" Look wählen, unter „Sound" Musik mischen – dann „Exportieren".');
       else cutMsg('Auf iPhone/iPad kann der Browser (noch) kein fertiges Video exportieren. Trimmen, Effekte & Sound-Vorschau gehen – der Export klappt am PC oder Android („Cut-Plan speichern" merkt sich alles).','warn');
     }
@@ -2046,6 +2059,19 @@
         const f=CUT_FILTERS.find(x=>x.key===b.dataset.f); cutFilter=f?f.css:''; renderCutFilters(); applyCutFilterPreview();
       });
     }
+    function renderCutAspects(){
+      $('#cutAspects').innerHTML=CUT_ASPECTS.map(a=>`<button class="cut-chip ${a.key===cutAspect?'on':''}" data-a="${a.key}">${esc(a.name)}</button>`).join('');
+      $('#cutAspects').querySelectorAll('.cut-chip').forEach(b=>b.onclick=()=>{ cutAspect=b.dataset.a; renderCutAspects(); });
+    }
+    // Ziel-Leinwand + Cover-Zuschnitt fürs gewählte Format
+    function cutOutSize(vw,vh){
+      const a=(CUT_ASPECTS.find(x=>x.key===cutAspect)||{}).ar||0;
+      if(!a) return {cw:vw||720,ch:vh||1280};
+      const big=Math.max(vw||720, vh||1280);
+      if(a>=1){ const cw=Math.min(1920,big); return {cw,ch:Math.round(cw/a)}; }
+      const ch=Math.min(1920,big); return {cw:Math.round(ch*a),ch};
+    }
+    function cutCoverRect(vw,vh,cw,ch){ const s=Math.max(cw/vw,ch/vh); const w=vw*s,h=vh*s; return {x:(cw-w)/2,y:(ch-h)/2,w,h}; }
     // --- Sound: Musik wählen / mischen ---
     async function populateMusicSelect(){
       const sel=$('#cutMusicSel'); let audio=[];
@@ -2129,7 +2155,9 @@
       cutExporting=true; cutStopMusicPreview();
       let ac=null, musicNode=null;
       try{
-        const cvs=document.createElement('canvas'); cvs.width=v.videoWidth||720; cvs.height=v.videoHeight||1280; const ctx=cvs.getContext('2d');
+        const vw=v.videoWidth||720, vh=v.videoHeight||1280;
+        const dim=cutOutSize(vw,vh); const cr=cutCoverRect(vw,vh,dim.cw,dim.ch);
+        const cvs=document.createElement('canvas'); cvs.width=dim.cw; cvs.height=dim.ch; const ctx=cvs.getContext('2d');
         const out=cvs.captureStream(30);
         let vidStream; try{ vidStream=v.captureStream?v.captureStream():v.mozCaptureStream(); }catch(e){}
         // Audio: Original + optional Musik mischen (WebAudio)
@@ -2153,7 +2181,8 @@
         v.currentTime=inT; await new Promise(r=>{ v.onseeked=()=>{ v.onseeked=null; r(); }; });
         rec.start(); if(musicNode){ try{ musicNode.start(0, cutMusicStart||0); }catch(e){} } await v.play();
         await new Promise((resolve)=>{ (function draw(){ try{
-            ctx.filter=filt; ctx.drawImage(v,0,0,cvs.width,cvs.height); ctx.filter='none';
+            ctx.fillStyle='#000'; ctx.fillRect(0,0,cvs.width,cvs.height);
+            ctx.filter=filt; ctx.drawImage(v,cr.x,cr.y,cr.w,cr.h); ctx.filter='none';
             if(txt){ ctx.textAlign='center'; ctx.font='bold '+Math.round(cvs.width/14)+'px sans-serif'; ctx.lineWidth=Math.max(2,cvs.width/120); ctx.strokeStyle='rgba(0,0,0,.75)'; ctx.fillStyle='#fff'; const y=cvs.height*0.9; ctx.strokeText(txt,cvs.width/2,y); ctx.fillText(txt,cvs.width/2,y); }
             if(fadeD>0){ const ct=v.currentTime; let a=0; if(ct<inT+fadeD) a=1-(ct-inT)/fadeD; else if(ct>outT-fadeD) a=1-(outT-ct)/fadeD; if(a>0){ ctx.fillStyle='rgba(0,0,0,'+Math.max(0,Math.min(1,a))+')'; ctx.fillRect(0,0,cvs.width,cvs.height); } }
           }catch(e){}
@@ -2165,6 +2194,29 @@
         cutMsg('Fertig! In „Meine Mediathek" gespeichert und heruntergeladen.','good'); popOK('Export fertig'); renderMyMedia();
       }catch(err){ cutMsg('Export fehlgeschlagen: '+(err&&err.message||err)+' – versuch es am PC.','warn'); }
       finally{ cutExporting=false; if(ac){ try{ac.close();}catch(e){} } $('#cutPlayFull').innerHTML=icon('play')+' Play'; }
+    }
+    // Aktuelles Bild als Cover/Thumbnail speichern (mit Look + Format)
+    function cutSaveFrame(){
+      const v=$('#cutVid'); if(!v.src||!cutDur){ toast('Erst Video laden'); return; }
+      try{
+        const vw=v.videoWidth||720, vh=v.videoHeight||1280;
+        const dim=cutOutSize(vw,vh); const cr=cutCoverRect(vw,vh,dim.cw,dim.ch);
+        const cvs=document.createElement('canvas'); cvs.width=dim.cw; cvs.height=dim.ch; const ctx=cvs.getContext('2d');
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,dim.cw,dim.ch);
+        ctx.filter=cutFilter||'none'; ctx.drawImage(v,cr.x,cr.y,cr.w,cr.h); ctx.filter='none';
+        const txt=$('#cutText').value.trim();
+        if(txt){ ctx.textAlign='center'; ctx.font='bold '+Math.round(dim.cw/12)+'px sans-serif'; ctx.lineWidth=Math.max(2,dim.cw/110); ctx.strokeStyle='rgba(0,0,0,.75)'; ctx.fillStyle='#fff'; const y=dim.ch*0.9; ctx.strokeText(txt,dim.cw/2,y); ctx.fillText(txt,dim.cw/2,y); }
+        cvs.toBlob(async(blob)=>{ if(!blob){ toast('Cover fehlgeschlagen'); return; }
+          await idbAdd({id:uid(),name:'cover_'+Date.now()+'.png',kind:'image',mime:'image/png',size:blob.size,createdAt:Date.now(),blob:blob});
+          const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='veox_cover.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),4000);
+          cutMsg('Cover-Bild in „Meine Mediathek" gespeichert und heruntergeladen.','good'); popOK('Cover gespeichert'); renderMyMedia();
+        },'image/png');
+      }catch(e){ cutMsg('Cover fehlgeschlagen: '+(e&&e.message||e),'warn'); }
+    }
+    // Ehrlicher CapCut-Übergang: Clip exportieren, dann in CapCut fein schleifen
+    function cutCapcutHandoff(){
+      cutMsg('So geht der Feinschliff in CapCut: 1) hier „Exportieren" (Clip landet in Fotos/Downloads). 2) CapCut öffnen → Neues Projekt → den Clip importieren. 3) dort weiter schneiden. CapCut wird jetzt geöffnet …');
+      try{ window.open('https://www.capcut.com/','_blank','noopener'); }catch(e){}
     }
     async function openCutterWith(id){ try{ const rec=await idbGet(id); if(rec&&rec.blob){ openCutter(); cutLoadBlob(rec.blob); } }catch(e){} }
     function wireCutterTimeline(){
@@ -2205,6 +2257,20 @@
         packages.forEach(p=>{ const g=clean(p.group); if(g!==p.group){ p.group=g; ch2=true; } });
         if(ch2) savePackages();
         localStorage.setItem('veox_deemoji','1');
+      }
+    }catch(e){}
+    // Einmalig: neue Dreh+Schnitt-Preise (YouTube 500 €, TikTok 50–100 €) ergänzen
+    try{
+      if(localStorage.getItem('veox_pkg_cut')!=='1'){
+        const now=Date.now(); const have=new Set(activePkg().map(p=>(p.name||'').toLowerCase()));
+        const add=[
+          {name:'YouTube-Video',group:'Dreh + Schnitt (Komplett)',price:500,unit:'~8 Std.',popular:true,desc:'Kompletter Tag Dreh + Schnitt (ca. 8 Std.)',features:['Dreh vor Ort (ca. 8 Std.)','Kompletter Schnitt','Hook, Untertitel, Musik & Sounddesign','B-Roll & Grafiken','1 Korrekturschleife']},
+          {name:'TikTok / Reel',group:'Dreh + Schnitt (Komplett)',price:50,unit:'50–100 €',popular:false,desc:'Kurzvideo-Schnitt – je nach Aufwand 50–100 €',features:['Schnitt eines Kurzvideos','Hook + Untertitel','Musik & Effekte','Preis nach Aufwand: 50–100 €']},
+        ];
+        let addedAny=false;
+        add.forEach(a=>{ if(!have.has(a.name.toLowerCase())){ packages.push(Object.assign({id:uid(),createdAt:now,updatedAt:now,deleted:false},a)); addedAny=true; } });
+        if(addedAny) savePackages();
+        localStorage.setItem('veox_pkg_cut','1');
       }
     }catch(e){}
     renderIdeen();
@@ -2277,6 +2343,8 @@
     $('#cutOrigVol').oninput=(e)=>{ cutOrigVol=(+e.target.value)/100; $('#cutOrigVolL').textContent=e.target.value+'%'; };
     $('#cutMusicStart').oninput=(e)=>{ cutMusicStart=Math.max(0,+e.target.value||0); };
     $('#cutTap').onclick=cutTapTempo;
+    $('#cutFrame').onclick=cutSaveFrame;
+    $('#cutCapcut').onclick=cutCapcutHandoff;
     wireCutterTimeline();
     $('#mediaRefresh').onclick=()=>renderMyMedia();
     $('#mediaFile').onchange=(e)=>{ const fs=Array.from(e.target.files||[]); e.target.value=''; importMedia(fs); };
