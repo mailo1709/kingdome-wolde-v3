@@ -667,6 +667,12 @@ window.APP_CONTENT = (function () {
   // PACKAGES – Beispiel-Preise (frei anpassbar). Für App & Website.
   // ---------------------------------------------------------------------------
   const PACKAGES = [
+    { group: 'Dreh + Schnitt (Komplett)', items: [
+      { name: 'YouTube-Video', price: 500, unit: '~8 Std.', popular: true, desc: 'Kompletter Tag Dreh + Schnitt (ca. 8 Std.)',
+        features: ['Dreh vor Ort (ca. 8 Std.)', 'Kompletter Schnitt', 'Hook, Untertitel, Musik & Sounddesign', 'B-Roll & Grafiken', '1 Korrekturschleife'] },
+      { name: 'TikTok / Reel', price: 50, unit: '50–100 €', popular: false, desc: 'Kurzvideo-Schnitt – je nach Aufwand 50–100 €',
+        features: ['Schnitt eines Kurzvideos', 'Hook + Untertitel', 'Musik & Effekte', 'Preis nach Aufwand: 50–100 €'] },
+    ]},
     { group: 'Kurzvideos (Reels · Shorts · TikTok)', items: [
       { name: 'Starter', price: 89, unit: '3 Videos', popular: false, desc: '3 Kurzvideos, professioneller Schnitt (~30 €/Video)',
         features: ['3 Videos (bis 60 Sek.)', 'Schnitt + passende Musik', 'Untertitel', '1 Korrekturschleife'] },
