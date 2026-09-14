@@ -401,6 +401,31 @@
     .cut-seg b{color:var(--accent2)}
     .cutmsg{font-size:12.5px;color:var(--muted);margin:0;line-height:1.5;text-align:center}
     .cutmsg.warn{color:var(--warn)} .cutmsg.good{color:var(--good)}
+    /* Cutter Werkzeug-Tabs & Panels */
+    .cut-segtabs{display:flex;gap:6px}
+    .cut-segtabs button{flex:1;padding:9px 6px;border-radius:10px;background:#1c1a26;border:1px solid var(--line2);
+      color:var(--muted);font-weight:700;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+    .cut-segtabs button .ic{width:15px;height:15px}
+    .cut-segtabs button.on{background:var(--grad);border-color:transparent;color:#fff}
+    .cut-panel{display:flex;flex-direction:column;gap:10px}
+    .cut-sub{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted2);margin-top:2px}
+    .cut-chips{display:flex;flex-wrap:wrap;gap:6px}
+    .cut-chip{padding:7px 12px;border-radius:999px;background:#1c1a26;border:1px solid var(--line2);
+      color:var(--muted);font-weight:600;font-size:12.5px}
+    .cut-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+    .cut-slider label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:5px}
+    .cut-slider label b{color:var(--accent2)}
+    .cut-slider input[type=range]{width:100%;accent-color:var(--accent);background:transparent;padding:0}
+    .cut-toggle{display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--text);font-weight:600}
+    .cut-toggle input{width:auto;transform:scale(1.25);accent-color:var(--accent)}
+    .cut-inlinelbl{font-size:12.5px;color:var(--muted);flex:1}
+    .cut-match{font-size:12.5px;color:var(--muted);line-height:1.55;background:#08070d;border:1px solid var(--line2);
+      border-radius:11px;padding:11px 12px}
+    .cut-match b{color:var(--text)} .cut-match .ml{color:var(--accent2);font-weight:700}
+    .cut-match a{display:inline-flex;align-items:center;gap:5px;margin-top:8px;margin-right:10px;color:var(--accent2);
+      font-weight:700;text-decoration:none;font-size:12.5px}
+    .cut-match a .ic{width:14px;height:14px}
+    .cut-bpm{font-weight:800;color:var(--accent2);min-width:66px;text-align:center;font-variant-numeric:tabular-nums}
   </style>
 </head>
 <body>
@@ -812,18 +837,61 @@
         </div>
       </div>
       <div class="cut-seg">Auswahl: <b id="cutSeg">–</b></div>
-      <div class="cut-tools">
-        <button id="cutStepB" class="cbtn"><span data-ico="stepback"></span> −1 Frame</button>
-        <button id="cutPlayFull" class="cbtn"><span data-ico="play"></span> Play</button>
-        <button id="cutStepF" class="cbtn"><span data-ico="stepfwd"></span> +1 Frame</button>
-        <button id="cutSetIn" class="cbtn mark"><span data-ico="markin"></span> Start hier</button>
-        <button id="cutPlaySel" class="cbtn"><span data-ico="play"></span> Auswahl</button>
-        <button id="cutSetOut" class="cbtn mark"><span data-ico="markout"></span> Ende hier</button>
+
+      <div class="cut-segtabs" id="cutSegTabs">
+        <button data-p="schnitt" class="on"><span data-ico="scissors"></span> Schnitt</button>
+        <button data-p="effekte"><span data-ico="sparkles"></span> Effekte</button>
+        <button data-p="sound"><span data-ico="music"></span> Sound</button>
       </div>
-      <div class="cut-row">
-        <input id="cutText" class="grow" type="text" placeholder="Text einblenden (optional) …" />
-        <select id="cutSpeed"><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="1.5">1,5×</option><option value="2">2×</option></select>
+
+      <!-- Panel: Schnitt -->
+      <div class="cut-panel" id="cutPanel-schnitt">
+        <div class="cut-tools">
+          <button id="cutStepB" class="cbtn"><span data-ico="stepback"></span> −1 Frame</button>
+          <button id="cutPlayFull" class="cbtn"><span data-ico="play"></span> Play</button>
+          <button id="cutStepF" class="cbtn"><span data-ico="stepfwd"></span> +1 Frame</button>
+          <button id="cutSetIn" class="cbtn mark"><span data-ico="markin"></span> Start hier</button>
+          <button id="cutPlaySel" class="cbtn"><span data-ico="play"></span> Auswahl</button>
+          <button id="cutSetOut" class="cbtn mark"><span data-ico="markout"></span> Ende hier</button>
+        </div>
+        <div class="cut-row"><span class="cut-inlinelbl">Tempo</span>
+          <select id="cutSpeed"><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="1.5">1,5×</option><option value="2">2×</option></select>
+        </div>
       </div>
+
+      <!-- Panel: Effekte -->
+      <div class="cut-panel" id="cutPanel-effekte" hidden>
+        <div class="cut-sub">Look / Filter</div>
+        <div class="cut-chips" id="cutFilters"></div>
+        <label class="cut-toggle"><input type="checkbox" id="cutFade" /> Weich ein- &amp; ausblenden (Fade)</label>
+        <div class="cut-sub">Text einblenden</div>
+        <input id="cutText" type="text" placeholder="z.B. Hook / Untertitel (optional) …" />
+      </div>
+
+      <!-- Panel: Sound -->
+      <div class="cut-panel" id="cutPanel-sound" hidden>
+        <div class="cut-sub">Musik-Remix</div>
+        <div class="cut-row">
+          <select id="cutMusicSel" class="grow"></select>
+          <button id="cutMusicPlay" class="cbtn" style="flex:0 0 auto"><span data-ico="play"></span></button>
+        </div>
+        <div class="cut-slider"><label>Musik-Lautstärke <b id="cutMusicVolL">70%</b></label>
+          <input type="range" id="cutMusicVol" min="0" max="100" value="70" /></div>
+        <div class="cut-slider"><label>Original-Ton <b id="cutOrigVolL">100%</b></label>
+          <input type="range" id="cutOrigVol" min="0" max="100" value="100" /></div>
+        <div class="cut-row"><span class="cut-inlinelbl">Musik ab Sekunde</span>
+          <input type="number" id="cutMusicStart" value="0" min="0" step="0.5" style="width:92px" /></div>
+
+        <div class="cut-sub">Passende Musik finden (Berater)</div>
+        <p class="cutmsg" style="text-align:left;margin:0">Wähle die Stimmung deines Videos – ich schlage passende Sounds, das Tempo (BPM) und Effekte vor.</p>
+        <div class="cut-chips" id="cutVibes"></div>
+        <div id="cutMatch" class="cut-match" hidden></div>
+
+        <div class="cut-sub">Beat finden (Tap-Tempo)</div>
+        <div class="cut-row"><button id="cutTap" class="cbtn grow"><span data-ico="target"></span> Beat tippen</button>
+          <span id="cutBpm" class="cut-bpm">–</span></div>
+      </div>
+
       <div class="cut-actions">
         <button id="cutExport" class="btn primary" style="flex:1"><span data-ico="download"></span> Exportieren</button>
         <button id="cutPlan" class="btn ghost" style="flex:1"><span data-ico="save"></span> Cut-Plan speichern</button>
@@ -831,6 +899,7 @@
       <p class="cutmsg" id="cutMsg"></p>
     </div>
     <input type="file" id="cutFile" accept="video/*" style="display:none" />
+    <input type="file" id="cutMusicFile" accept="audio/*" style="display:none" />
   </div>
 
   <script src="content.js"></script>
@@ -1910,8 +1979,35 @@
     function openCapture(){ $('#capText').value=''; $('#capResult').innerHTML=''; $('#capActions').style.display='none';
       $('#capMicHint').textContent=''; capItems=[]; openSheet('#captureOverlay'); setTimeout(()=>$('#capText').focus(),80); }
 
-    // ---------- Studio-Cutter (Timeline-Trimmer) ----------
+    // ---------- Studio-Cutter (Timeline-Trimmer + Effekte + Sound-Remix) ----------
     let cutIn=0, cutOut=0, cutDur=0, cutURL=null, cutTimer=null, cutSelMode=false, cutFPS=30, cutExporting=false;
+    let cutFilter='', cutFade=false;
+    let cutMusicArr=null, cutMusicName='', cutMusicVol=0.7, cutOrigVol=1, cutMusicStart=0;
+    let cutMusicPrevAudio=null, cutMusicPrevURL=null;
+    // Look-/Filter-Presets (funktionieren als CSS- UND Canvas-Filter → auch im Export)
+    const CUT_FILTERS=[
+      {key:'', name:'Original', css:''},
+      {key:'warm', name:'Warm', css:'saturate(1.18) sepia(.14) brightness(1.03) contrast(1.05)'},
+      {key:'kalt', name:'Kühl', css:'saturate(1.1) hue-rotate(-10deg) brightness(.98) contrast(1.1)'},
+      {key:'kino', name:'Kino', css:'contrast(1.18) saturate(1.22) brightness(.96)'},
+      {key:'vivid', name:'Kräftig', css:'saturate(1.55) contrast(1.1)'},
+      {key:'sw', name:'Schwarz-Weiß', css:'grayscale(1) contrast(1.12)'},
+      {key:'vintage', name:'Vintage', css:'sepia(.45) saturate(1.2) contrast(.95) brightness(1.05)'},
+      {key:'hell', name:'Hell', css:'brightness(1.15) contrast(1.02)'},
+      {key:'dunkel', name:'Dunkel/Moody', css:'brightness(.9) contrast(1.22) saturate(1.1)'},
+    ];
+    // Musik-Berater: Stimmung → passende Sounds, Tempo, Effekte
+    const CUT_VIBES=[
+      {key:'action', name:'Action / Sport', moods:'Phonk, EDM, treibende Beats', bpm:'140–175 BPM', sfx:'Whoosh, Impact, Riser', tip:'Harte Schnitte auf den Beat, Speed-Ramps in die Bewegung.', q:'phonk'},
+      {key:'cinematic', name:'Cinematic', moods:'Epic / Cinematic, Orchester', bpm:'70–110 BPM', sfx:'Boom/Impact, Riser, Sub-Drop', tip:'Ruhige, längere Clips, weiche Übergänge (Fade), langsamer Zoom.', q:'cinematic'},
+      {key:'emotional', name:'Emotional', moods:'Piano, Ambient, Sad', bpm:'60–90 BPM', sfx:'sanftes Swell, Vinyl-Knistern', tip:'Weniger Schnitte, mehr Ruhe. Fade ein/aus nutzen.', q:'sad emotional'},
+      {key:'vlog', name:'Vlog / Alltag', moods:'Lofi, Chill, Happy Acoustic', bpm:'90–115 BPM', sfx:'leichtes Pop, Klick, Page-Turn', tip:'Lockere Jump Cuts, Musik leiser unter der Stimme (Ducking).', q:'lofi'},
+      {key:'funny', name:'Funny / Meme', moods:'Quirky, Comedy, Meme-Sounds', bpm:'100–130 BPM', sfx:'Boing, Record-Scratch, Air-Horn', tip:'Timing ist alles – SFX genau auf die Pointe setzen.', q:'funny'},
+      {key:'motivation', name:'Motivierend', moods:'Motivational, Epic Build-up', bpm:'110–140 BPM', sfx:'Riser, Impact, Clap', tip:'Aufbau von ruhig zu laut, Drop auf den stärksten Clip.', q:'motivational'},
+      {key:'chill', name:'Chill', moods:'Lofi, Ambient, Deep House', bpm:'80–110 BPM', sfx:'Vinyl, sanftes Swoosh', tip:'Lange, weiche Übergänge, warmer Look.', q:'ambient'},
+      {key:'gaming', name:'Gaming', moods:'Electronic, Synthwave, Trap', bpm:'120–160 BPM', sfx:'Glitch, Coin, UI-Klick', tip:'Schnelle Cuts, Glitch-Übergänge, kräftiger Look.', q:'synthwave'},
+    ];
+    let cutTapTimes=[];
     function fmtClock(s){ s=Math.max(0,s||0); const m=Math.floor(s/60), ss=Math.floor(s%60); return m+':'+String(ss).padStart(2,'0'); }
     function cutMsg(t,cls){ const el=$('#cutMsg'); el.textContent=t||''; el.className='cutmsg'+(cls?' '+cls:''); }
     function cutExportSupported(){ try{ const v=document.createElement('video'); return !!(window.MediaRecorder && HTMLCanvasElement.prototype.captureStream && (v.captureStream||v.mozCaptureStream)); }catch(e){ return false; } }
@@ -1927,14 +2023,86 @@
     function cutUpdatePlayhead(){ const v=$('#cutVid'); $('#cutPlayhead').style.left=cutPct(v.currentTime||0)+'%'; $('#cutCur').textContent=fmtClock(v.currentTime||0); }
     function openCutter(){
       $('#cutterOverlay').hidden=false;
-      if(cutExportSupported()) cutMsg('Clip laden, mit den Griffen Start/Ende ziehen, „Auswahl" zum Prüfen – dann „Exportieren".');
-      else cutMsg('Auf iPhone/iPad kann der Browser (noch) kein fertiges Video exportieren. Du kannst hier trimmen und den „Cut-Plan speichern" – der Export klappt am PC oder Android.','warn');
+      renderCutFilters(); renderVibes(); populateMusicSelect(); switchCutPanel('schnitt');
+      if(cutExportSupported()) cutMsg('Trimmen mit den Griffen, unter „Effekte" Look wählen, unter „Sound" Musik mischen – dann „Exportieren".');
+      else cutMsg('Auf iPhone/iPad kann der Browser (noch) kein fertiges Video exportieren. Trimmen, Effekte & Sound-Vorschau gehen – der Export klappt am PC oder Android („Cut-Plan speichern" merkt sich alles).','warn');
     }
-    function closeCutter(){ const v=$('#cutVid'); try{v.pause();}catch(e){} clearTimeout(cutTimer); $('#cutterOverlay').hidden=true; $('#cutPlayFull').innerHTML=icon('play')+' Play'; }
+    function closeCutter(){ const v=$('#cutVid'); try{v.pause();}catch(e){} clearTimeout(cutTimer); cutStopMusicPreview();
+      $('#cutterOverlay').hidden=true; $('#cutPlayFull').innerHTML=icon('play')+' Play'; }
+    function applyCutFilterPreview(){ try{ $('#cutVid').style.filter = cutFilter || 'none'; }catch(e){} }
     function cutLoadBlob(blob){ const v=$('#cutVid'); if(cutURL){ try{URL.revokeObjectURL(cutURL);}catch(e){} }
       cutURL=URL.createObjectURL(blob); v.src=cutURL; v.load(); $('#cutHint').style.display='none';
-      $('#cutText').value=''; $('#cutTextPrev').textContent='';
+      $('#cutText').value=''; $('#cutTextPrev').textContent=''; applyCutFilterPreview();
       v.onloadedmetadata=()=>{ cutDur=v.duration||0; cutIn=0; cutOut=cutDur; cutUpdateSel(); cutUpdatePlayhead(); }; }
+    // --- Werkzeug-Panels ---
+    function switchCutPanel(p){
+      ['schnitt','effekte','sound'].forEach(k=>{ const el=$('#cutPanel-'+k); if(el) el.hidden=(k!==p); });
+      $('#cutSegTabs').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));
+    }
+    // --- Effekte / Filter ---
+    function renderCutFilters(){
+      $('#cutFilters').innerHTML=CUT_FILTERS.map(f=>`<button class="cut-chip ${f.css===cutFilter?'on':''}" data-f="${f.key}">${esc(f.name)}</button>`).join('');
+      $('#cutFilters').querySelectorAll('.cut-chip').forEach(b=>b.onclick=()=>{
+        const f=CUT_FILTERS.find(x=>x.key===b.dataset.f); cutFilter=f?f.css:''; renderCutFilters(); applyCutFilterPreview();
+      });
+    }
+    // --- Sound: Musik wählen / mischen ---
+    async function populateMusicSelect(){
+      const sel=$('#cutMusicSel'); let audio=[];
+      try{ audio=(await idbAll()).filter(m=>m.kind==='audio'); }catch(e){}
+      let html='<option value="">Keine Musik</option>';
+      html+=audio.map(a=>`<option value="idb:${a.id}"${cutMusicName===a.name?' selected':''}>${esc(a.name)}</option>`).join('');
+      html+='<option value="__file">Musik-Datei wählen …</option>';
+      sel.innerHTML=html;
+    }
+    function readBlobArr(blob){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>rej(r.error); r.readAsArrayBuffer(blob); }); }
+    async function loadMusicFromBlob(blob,name){
+      try{ cutMusicArr=await readBlobArr(blob); cutMusicName=name||'Musik';
+        cutStopMusicPreview(); if(cutMusicPrevURL){ try{URL.revokeObjectURL(cutMusicPrevURL);}catch(e){} }
+        cutMusicPrevURL=URL.createObjectURL(blob); cutMusicPrevAudio=new Audio(cutMusicPrevURL); cutMusicPrevAudio.volume=cutMusicVol;
+        cutMsg('Musik geladen: '+cutMusicName+' – mit „anhören" prüfen, Lautstärke einstellen, dann exportieren.','good');
+      }catch(e){ cutMsg('Musik konnte nicht geladen werden.','warn'); }
+    }
+    function clearMusic(){ cutMusicArr=null; cutMusicName=''; cutStopMusicPreview();
+      if(cutMusicPrevURL){ try{URL.revokeObjectURL(cutMusicPrevURL);}catch(e){} cutMusicPrevURL=null; } cutMusicPrevAudio=null; }
+    function cutStopMusicPreview(){ if(cutMusicPrevAudio){ try{cutMusicPrevAudio.pause();}catch(e){} } $('#cutMusicPlay').innerHTML=icon('play'); }
+    function cutMusicPreviewToggle(){
+      if(!cutMusicPrevAudio){ toast('Erst Musik wählen'); return; }
+      if(cutMusicPrevAudio.paused){ cutMusicPrevAudio.currentTime=cutMusicStart||0; cutMusicPrevAudio.volume=cutMusicVol; cutMusicPrevAudio.play(); $('#cutMusicPlay').innerHTML=icon('pause'); }
+      else { cutMusicPrevAudio.pause(); $('#cutMusicPlay').innerHTML=icon('play'); }
+    }
+    // --- Musik-Berater ---
+    function renderVibes(){
+      $('#cutVibes').innerHTML=CUT_VIBES.map(v=>`<button class="cut-chip" data-v="${v.key}">${esc(v.name)}</button>`).join('');
+      $('#cutVibes').querySelectorAll('.cut-chip').forEach(b=>b.onclick=()=>{
+        $('#cutVibes').querySelectorAll('.cut-chip').forEach(x=>x.classList.toggle('on',x===b));
+        pickVibe(b.dataset.v);
+      });
+    }
+    function pickVibe(key){
+      const v=CUT_VIBES.find(x=>x.key===key); if(!v) return;
+      const mUrl='https://pixabay.com/music/search/'+encodeURIComponent(v.q)+'/';
+      const sUrl='https://pixabay.com/sound-effects/search/'+encodeURIComponent(v.sfx.split(',')[0].trim())+'/';
+      $('#cutMatch').hidden=false;
+      $('#cutMatch').innerHTML=`<b>${esc(v.name)}</b><br>
+        <span class="ml">Musik:</span> ${esc(v.moods)}<br>
+        <span class="ml">Tempo:</span> ${esc(v.bpm)}<br>
+        <span class="ml">Effekte/SFX:</span> ${esc(v.sfx)}<br>
+        <span class="ml">Tipp:</span> ${esc(v.tip)}<br>
+        <a href="${esc(mUrl)}" target="_blank" rel="noopener">${icon('music')} Musik finden</a>
+        <a href="${esc(sUrl)}" target="_blank" rel="noopener">${icon('zap')} SFX finden</a>`;
+    }
+    // --- Tap-Tempo (BPM) ---
+    function cutTapTempo(){
+      const now=performance.now(); cutTapTimes.push(now);
+      cutTapTimes=cutTapTimes.filter(t=>now-t<3000); // nur letzte ~3 s
+      if(cutTapTimes.length<2){ $('#cutBpm').textContent='…'; return; }
+      const gaps=[]; for(let i=1;i<cutTapTimes.length;i++) gaps.push(cutTapTimes[i]-cutTapTimes[i-1]);
+      const avg=gaps.reduce((a,b)=>a+b,0)/gaps.length; const bpm=Math.round(60000/avg);
+      $('#cutBpm').textContent=bpm+' BPM';
+      const beat=60/bpm;
+      cutMsg('Beat: '+bpm+' BPM → Schnitt-Idee: alle '+beat.toFixed(2)+' s (1 Beat) oder '+(beat*2).toFixed(2)+' s (2 Beats).');
+    }
     function cutSeek(t){ const v=$('#cutVid'); if(!v.src) return; v.currentTime=Math.max(0,Math.min(cutDur||0,t)); }
     function cutTimeFromX(clientX){ const r=$('#cutTrack').getBoundingClientRect(); const f=(clientX-r.left)/r.width; return Math.max(0,Math.min(1,f))*(cutDur||0); }
     function cutPlaySelection(){ const v=$('#cutVid'); if(!v.src) return; cutSelMode=true; v.playbackRate=Number($('#cutSpeed').value)||1;
@@ -1945,38 +2113,58 @@
       else { v.pause(); $('#cutPlayFull').innerHTML=icon('play')+' Play'; } }
     function cutStep(dir){ const v=$('#cutVid'); if(!v.src) return; v.pause(); $('#cutPlayFull').innerHTML=icon('play')+' Play'; cutSeek((v.currentTime||0)+dir/cutFPS); }
     function cutSavePlan(){ if(!cutDur){ toast('Erst Video laden'); return; } const dur=Math.max(0,(cutOut||0)-(cutIn||0)); const t=$('#cutText').value.trim();
+      const look=(CUT_FILTERS.find(f=>f.css===cutFilter)||{}).name||'Original';
+      let notes='Schnitt von '+fmtClock(cutIn)+' bis '+fmtClock(cutOut||0)+' (Dauer '+dur.toFixed(1)+' s)'
+        +'\nTempo: '+$('#cutSpeed').value+'×'+'\nLook: '+look+(cutFade?' · Fade ein/aus':'');
+      if(t) notes+='\nText: '+t;
+      if(cutMusicName) notes+='\nMusik: '+cutMusicName+' (Musik '+Math.round(cutMusicVol*100)+'% / Original '+Math.round(cutOrigVol*100)+'%, ab '+(cutMusicStart||0)+' s)';
       ideas.push({id:uid(),title:'Cut-Plan '+fmtClock(cutIn)+'–'+fmtClock(cutOut||0),platform:'',
-        notes:'Schnitt von '+fmtClock(cutIn)+' bis '+fmtClock(cutOut||0)+' (Dauer '+dur.toFixed(1)+' s)'+(t?('\nText: '+t):'')+'\nTempo: '+$('#cutSpeed').value+'×',
-        tags:['cut-plan'],link:'',date:'',checklist:[],priority:0,stage:'schnitt',createdAt:Date.now(),updatedAt:Date.now(),deleted:false});
+        notes,tags:['cut-plan'],link:'',date:'',checklist:[],priority:0,stage:'schnitt',createdAt:Date.now(),updatedAt:Date.now(),deleted:false});
       save(); renderIdeen(); popOK('Cut-Plan gespeichert'); }
     async function cutExport(){
       const v=$('#cutVid'); if(!v.src){ toast('Erst Video laden'); return; }
       if(cutExporting) return;
       if(!cutExportSupported()){ cutMsg('Export auf diesem Gerät nicht möglich (iPhone/iPad-Browser). Nutze „Cut-Plan speichern" oder exportiere am PC/Android.','warn'); return; }
       const inT=cutIn||0, outT=cutOut||cutDur; if(!(outT>inT)){ toast('Start/Ende prüfen'); return; }
-      cutExporting=true;
+      cutExporting=true; cutStopMusicPreview();
+      let ac=null, musicNode=null;
       try{
         const cvs=document.createElement('canvas'); cvs.width=v.videoWidth||720; cvs.height=v.videoHeight||1280; const ctx=cvs.getContext('2d');
         const out=cvs.captureStream(30);
-        let src; try{ src=v.captureStream?v.captureStream():v.mozCaptureStream(); }catch(e){}
-        if(src){ src.getAudioTracks().forEach(t=>{ try{out.addTrack(t);}catch(e){} }); }
+        let vidStream; try{ vidStream=v.captureStream?v.captureStream():v.mozCaptureStream(); }catch(e){}
+        // Audio: Original + optional Musik mischen (WebAudio)
+        const needMix = !!cutMusicArr || cutOrigVol!==1;
+        if(needMix){
+          try{
+            ac=new (window.AudioContext||window.webkitAudioContext)(); await ac.resume();
+            const dest=ac.createMediaStreamDestination();
+            const vTracks=vidStream?vidStream.getAudioTracks():[];
+            if(vTracks.length){ const s=ac.createMediaStreamSource(new MediaStream([vTracks[0]])); const g=ac.createGain(); g.gain.value=cutOrigVol; s.connect(g); g.connect(dest); }
+            if(cutMusicArr){ const buf=await ac.decodeAudioData(cutMusicArr.slice(0)); musicNode=ac.createBufferSource(); musicNode.buffer=buf; musicNode.loop=true; const gm=ac.createGain(); gm.gain.value=cutMusicVol; musicNode.connect(gm); gm.connect(dest); }
+            dest.stream.getAudioTracks().forEach(t=>{ try{out.addTrack(t);}catch(e){} });
+          }catch(e){ if(vidStream){ vidStream.getAudioTracks().forEach(t=>{ try{out.addTrack(t);}catch(_){} }); } }
+        } else if(vidStream){ vidStream.getAudioTracks().forEach(t=>{ try{out.addTrack(t);}catch(e){} }); }
         const mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(m=>{try{return MediaRecorder.isTypeSupported(m);}catch(e){return false;}})||'video/webm';
         const rec=new MediaRecorder(out,{mimeType:mime}); const chunks=[]; rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
         const stopped=new Promise(r=>{ rec.onstop=r; });
         const txt=$('#cutText').value.trim(); v.playbackRate=Number($('#cutSpeed').value)||1;
+        const filt=cutFilter||'none'; const fadeD=cutFade?Math.min(0.6,(outT-inT)/4):0;
         cutMsg('Export läuft … der Clip spielt einmal durch, bitte warten.');
         v.currentTime=inT; await new Promise(r=>{ v.onseeked=()=>{ v.onseeked=null; r(); }; });
-        rec.start(); await v.play();
-        await new Promise((resolve)=>{ (function draw(){ try{ ctx.drawImage(v,0,0,cvs.width,cvs.height);
-            if(txt){ ctx.textAlign='center'; ctx.font='bold '+Math.round(cvs.width/14)+'px sans-serif'; ctx.lineWidth=Math.max(2,cvs.width/120); ctx.strokeStyle='rgba(0,0,0,.75)'; ctx.fillStyle='#fff'; const y=cvs.height*0.9; ctx.strokeText(txt,cvs.width/2,y); ctx.fillText(txt,cvs.width/2,y); } }catch(e){}
-          if(!v.paused && !v.ended && v.currentTime<outT){ requestAnimationFrame(draw); } else { try{v.pause();}catch(e){} try{rec.stop();}catch(e){} resolve(); } })(); });
+        rec.start(); if(musicNode){ try{ musicNode.start(0, cutMusicStart||0); }catch(e){} } await v.play();
+        await new Promise((resolve)=>{ (function draw(){ try{
+            ctx.filter=filt; ctx.drawImage(v,0,0,cvs.width,cvs.height); ctx.filter='none';
+            if(txt){ ctx.textAlign='center'; ctx.font='bold '+Math.round(cvs.width/14)+'px sans-serif'; ctx.lineWidth=Math.max(2,cvs.width/120); ctx.strokeStyle='rgba(0,0,0,.75)'; ctx.fillStyle='#fff'; const y=cvs.height*0.9; ctx.strokeText(txt,cvs.width/2,y); ctx.fillText(txt,cvs.width/2,y); }
+            if(fadeD>0){ const ct=v.currentTime; let a=0; if(ct<inT+fadeD) a=1-(ct-inT)/fadeD; else if(ct>outT-fadeD) a=1-(outT-ct)/fadeD; if(a>0){ ctx.fillStyle='rgba(0,0,0,'+Math.max(0,Math.min(1,a))+')'; ctx.fillRect(0,0,cvs.width,cvs.height); } }
+          }catch(e){}
+          if(!v.paused && !v.ended && v.currentTime<outT){ requestAnimationFrame(draw); } else { try{v.pause();}catch(e){} try{if(musicNode)musicNode.stop();}catch(e){} try{rec.stop();}catch(e){} resolve(); } })(); });
         await stopped;
         const blob=new Blob(chunks,{type:mime});
         await idbAdd({id:uid(),name:'cut_'+Date.now()+'.webm',kind:'video',mime:mime,size:blob.size,createdAt:Date.now(),blob:blob});
         const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='veox_cut.webm'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000);
         cutMsg('Fertig! In „Meine Mediathek" gespeichert und heruntergeladen.','good'); popOK('Export fertig'); renderMyMedia();
       }catch(err){ cutMsg('Export fehlgeschlagen: '+(err&&err.message||err)+' – versuch es am PC.','warn'); }
-      finally{ cutExporting=false; $('#cutPlayFull').innerHTML=icon('play')+' Play'; }
+      finally{ cutExporting=false; if(ac){ try{ac.close();}catch(e){} } $('#cutPlayFull').innerHTML=icon('play')+' Play'; }
     }
     async function openCutterWith(id){ try{ const rec=await idbGet(id); if(rec&&rec.blob){ openCutter(); cutLoadBlob(rec.blob); } }catch(e){} }
     function wireCutterTimeline(){
@@ -2076,6 +2264,19 @@
     $('#cutText').oninput=()=>{ $('#cutTextPrev').textContent=$('#cutText').value||''; };
     $('#cutExport').onclick=cutExport;
     $('#cutPlan').onclick=cutSavePlan;
+    $('#cutSegTabs').querySelectorAll('button').forEach(b=>b.onclick=()=>switchCutPanel(b.dataset.p));
+    $('#cutFade').onchange=(e)=>{ cutFade=e.target.checked; };
+    $('#cutMusicSel').onchange=(e)=>{ const val=e.target.value;
+      if(val==='__file'){ $('#cutMusicFile').click(); e.target.value = cutMusicName? '' : ''; }
+      else if(val===''){ clearMusic(); cutMsg('Musik entfernt.'); }
+      else if(val.indexOf('idb:')===0){ idbGet(val.slice(4)).then(rec=>{ if(rec&&rec.blob) loadMusicFromBlob(rec.blob, rec.name); }); }
+    };
+    $('#cutMusicFile').onchange=(e)=>{ const f=e.target.files&&e.target.files[0]; e.target.value=''; if(f){ loadMusicFromBlob(f, f.name); populateMusicSelect(); } };
+    $('#cutMusicPlay').onclick=cutMusicPreviewToggle;
+    $('#cutMusicVol').oninput=(e)=>{ cutMusicVol=(+e.target.value)/100; $('#cutMusicVolL').textContent=e.target.value+'%'; if(cutMusicPrevAudio) cutMusicPrevAudio.volume=cutMusicVol; };
+    $('#cutOrigVol').oninput=(e)=>{ cutOrigVol=(+e.target.value)/100; $('#cutOrigVolL').textContent=e.target.value+'%'; };
+    $('#cutMusicStart').oninput=(e)=>{ cutMusicStart=Math.max(0,+e.target.value||0); };
+    $('#cutTap').onclick=cutTapTempo;
     wireCutterTimeline();
     $('#mediaRefresh').onclick=()=>renderMyMedia();
     $('#mediaFile').onchange=(e)=>{ const fs=Array.from(e.target.files||[]); e.target.value=''; importMedia(fs); };
