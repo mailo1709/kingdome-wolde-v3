@@ -476,6 +476,8 @@
       (g.items||[]).forEach(function(it){ var o=document.createElement('option');
         o.value=it.name+' – '+eur(it.price); o.textContent=g.group.replace(/^\S+\s/,'')+': '+it.name+' ('+eur(it.price)+')';
         pkgSel.appendChild(o); }); }); }
+    // UTF-8-sicheres base64url (für den App-Import-Link)
+    function b64url(str){ try{ return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }catch(e){ return ''; } }
     var form=document.getElementById('anfrageForm');
     if(form){ form.addEventListener('submit',function(e){ e.preventDefault();
       var nm=(document.getElementById('afName').value||'').trim();
@@ -483,8 +485,16 @@
       var pk=document.getElementById('afPkg').value;
       var ms=(document.getElementById('afMsg').value||'').trim();
       var to=(C.CONTACT&&C.CONTACT.email)?C.CONTACT.email:'';
+      // Preis aus der Paket-Auswahl herausziehen (z.B. "YouTube-Video – 500 €")
+      var pm=pk.match(/(\d[\d.]*)\s*€/); var price=pm?Number(pm[1].replace(/\./g,'')):0;
+      // Auftrag als Objekt kodieren → Import-Link für die App
+      var order={ v:1, id:'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,7), ts:Date.now(),
+        customer:nm, contact:ct, packageName:pk, price:price, notes:ms, source:'website' };
+      var appUrl=location.href.split('#')[0].replace(/website\/[^\/]*$/, 'ideen/');
+      var link=appUrl+'#auftrag='+b64url(JSON.stringify(order));
       var subj='Anfrage'+(nm?(' von '+nm):'')+(pk?(' – '+pk):'');
-      var body='Name: '+nm+'\nKontakt: '+ct+'\nPaket: '+(pk||'-')+'\n\nNachricht:\n'+ms;
+      var body='Name: '+nm+'\nKontakt: '+ct+'\nPaket: '+(pk||'-')+'\n\nNachricht:\n'+ms
+        +'\n\n──────────\nIn die App übernehmen (nur für Veox Edits – auf dem eigenen Gerät antippen):\n'+link;
       if(to){ window.location.href='mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body); }
       var okp=document.getElementById('afOkP'); if(okp&&nm) okp.textContent='Danke '+nm+'! Deine Anfrage ist unterwegs – ich melde mich schnell bei dir zurück.';
       document.getElementById('afOk').hidden=false;

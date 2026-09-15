@@ -479,7 +479,7 @@
     <!-- RECHNUNG / BUSINESS -->
     <section id="viewRechnung" hidden>
       <div class="sectionhead" style="margin-top:16px"><span data-ico="clock"></span>Aufträge</div>
-      <p class="catnote">Kunden-Aufträge verfolgen: Angefragt → Bestätigt → Drehtermin → Schnitt → Fertig → Geliefert (oder Abgesagt). Alles jederzeit editierbar.</p>
+      <p class="catnote">Kunden-Aufträge verfolgen: Angefragt → Bestätigt → Drehtermin → Schnitt → Fertig → Geliefert (oder Abgesagt). Alles jederzeit editierbar. <b>Anfragen von der Website</b> landen automatisch hier, sobald du den Auftrags-Link aus der E-Mail auf deinem Gerät antippst.</p>
       <button class="btn primary" id="newOrder" style="margin-bottom:10px"><span data-ico="plus"></span> Neuer Auftrag</button>
       <div class="list" id="orderList"></div>
 
@@ -1893,6 +1893,30 @@
         if(!cur||(r.updatedAt||0)>(cur.updatedAt||0)){ map[r.id]=r; ch=true; } });
       orders=Object.values(map); if(ch){ saveOrders(); if(view==='rechnung') renderOrders(); } }
 
+    // ---------- Website-Auftrag importieren (über #auftrag=… Link) ----------
+    function b64urlDec(s){ try{ s=String(s).replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4)s+='='; return decodeURIComponent(escape(atob(s))); }catch(e){ return ''; } }
+    function importWebOrder(hashStr){
+      const m=/(?:^#?|[#&])auftrag=([^&]+)/.exec(hashStr||''); if(!m) return;
+      let o; try{ o=JSON.parse(b64urlDec(decodeURIComponent(m[1]))); }catch(e){ o=null; }
+      // Hash aufräumen, damit ein Reload nicht erneut importiert
+      try{ history.replaceState(null,'','#rechnung'); }catch(e){}
+      if(!o || !(o.customer||o.contact)){ toast('Auftrags-Link nicht lesbar'); return; }
+      let imported={}; try{ imported=JSON.parse(localStorage.getItem('ideen_web_orders'))||{}; }catch(e){}
+      if(o.id && imported[o.id]){ setView('rechnung'); toast('Auftrag „'+(o.customer||o.contact)+'" ist schon in der App'); return; }
+      const now=Date.now();
+      orders.push({ id:uid(), customer:(o.customer||'').trim()||'Website-Anfrage',
+        contact:(o.contact||'').trim(), price:Number(o.price)||0, address:'',
+        packageName:(o.packageName||'').trim(),
+        date:'', status:'angefragt',
+        notes:((o.notes||'').trim()+'\n\n(Über Website-Anfrage'+(o.ts?(' am '+new Date(o.ts).toLocaleString('de-DE')):'')+')').trim(),
+        createdAt:now, updatedAt:now, deleted:false });
+      saveOrders();
+      if(o.id){ imported[o.id]=now; try{ localStorage.setItem('ideen_web_orders', JSON.stringify(imported)); }catch(e){} }
+      setView('rechnung'); renderOrders();
+      popOK('Neuer Auftrag: '+(o.customer||o.contact));
+      maybeAutoSync();
+    }
+
     // ---------- Teleprompter ----------
     let teleY=0, teleSpeed=60, teleRun=false, teleRAF=null, teleLast=0, teleFont=34;
     function teleFrame(ts){
@@ -2274,8 +2298,11 @@
       }
     }catch(e){}
     renderIdeen();
-    const startView = (location.hash||'').replace('#','');
+    const initialHash = location.hash||'';
+    const startView = initialHash.replace('#','');
     setView(VIEWS[startView] ? startView : 'ideen');
+    importWebOrder(initialHash);
+    window.addEventListener('hashchange',()=>importWebOrder(location.hash||''));
 
     document.querySelectorAll('.navbtn').forEach(b=>b.onclick=()=>setView(b.dataset.view));
     $('#fab').onclick=()=>openEditor(null);
