@@ -401,6 +401,15 @@
     .cut-seg b{color:var(--accent2)}
     .cutmsg{font-size:12.5px;color:var(--muted);margin:0;line-height:1.5;text-align:center}
     .cutmsg.warn{color:var(--warn)} .cutmsg.good{color:var(--good)}
+    /* Pull-to-refresh */
+    .ptr{position:fixed;left:0;right:0;top:0;height:0;overflow:hidden;z-index:15;display:flex;
+      align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;
+      padding-bottom:6px;color:var(--accent2)}
+    .ptr-spin{width:26px;height:26px;border-radius:50%;border:2.5px solid var(--line2);
+      border-top-color:var(--accent2);transform:rotate(0deg)}
+    .ptr.loading{opacity:1!important;height:52px!important}
+    .ptr.loading .ptr-spin{animation:ptrspin .7s linear infinite}
+    @keyframes ptrspin{to{transform:rotate(360deg)}}
     /* Cutter Werkzeug-Tabs & Panels */
     .cut-segtabs{display:flex;gap:6px}
     .cut-segtabs button{flex:1;padding:9px 6px;border-radius:10px;background:#1c1a26;border:1px solid var(--line2);
@@ -429,6 +438,7 @@
   </style>
 </head>
 <body>
+  <div id="ptr" class="ptr"><div class="ptr-spin"></div></div>
   <div class="wrap">
     <header>
       <div class="topbar">
@@ -707,7 +717,10 @@
       </div>
       <div class="field"><label>Notizen</label><textarea id="ordNotes" style="min-height:54px" placeholder="Wünsche, Details, Liefer-Link …"></textarea></div>
       <div class="btnrow"><button class="btn ghost" id="ordCancel">Abbrechen</button><button class="btn primary" id="ordSave">Speichern</button></div>
-      <div class="btnrow"><button class="btn ghost" id="ordNotify"><span data-ico="bell"></span> Kunde benachrichtigen</button></div>
+      <div class="btnrow">
+        <button class="btn ghost" id="ordNotify"><span data-ico="bell"></span> Kunde benachrichtigen</button>
+        <button class="btn ghost" id="ordToInvoice"><span data-ico="receipt"></span> Rechnung erstellen</button>
+      </div>
       <div class="btnrow" id="ordDeleteRow" style="display:none"><button class="btn danger" id="ordDelete">Auftrag löschen</button></div>
     </div>
   </div>
@@ -866,6 +879,7 @@
         <div class="cut-sub">Look / Filter</div>
         <div class="cut-chips" id="cutFilters"></div>
         <label class="cut-toggle"><input type="checkbox" id="cutFade" /> Weich ein- &amp; ausblenden (Fade)</label>
+        <label class="cut-toggle"><input type="checkbox" id="cutFlip" /> Spiegeln (horizontal, z.B. Frontkamera)</label>
         <div class="cut-sub">Text einblenden</div>
         <input id="cutText" type="text" placeholder="z.B. Hook / Untertitel (optional) …" />
       </div>
@@ -881,6 +895,7 @@
           <input type="range" id="cutMusicVol" min="0" max="100" value="70" /></div>
         <div class="cut-slider"><label>Original-Ton <b id="cutOrigVolL">100%</b></label>
           <input type="range" id="cutOrigVol" min="0" max="100" value="100" /></div>
+        <label class="cut-toggle"><input type="checkbox" id="cutMute" /> Original-Ton stummschalten (nur Musik)</label>
         <div class="cut-row"><span class="cut-inlinelbl">Musik ab Sekunde</span>
           <input type="number" id="cutMusicStart" value="0" min="0" step="0.5" style="width:92px" /></div>
 
@@ -1872,6 +1887,19 @@
     function deleteOrder(){ if(!editOrdId) return; if(!confirm('Auftrag wirklich löschen?')) return;
       const o=orders.find(x=>x.id===editOrdId); if(o){ o.deleted=true; o.updatedAt=Date.now(); }
       saveOrders(); renderOrders(); closeSheet('#orderOverlay'); toast('Gelöscht'); maybeAutoSync(); }
+    function orderToInvoice(){
+      const customer=$('#ordCustomer').value.trim();
+      const address=$('#ordAddress').value.trim();
+      const pk=$('#ordPackage').value.trim()||'Videoschnitt';
+      const price=Number($('#ordPrice').value)||0;
+      closeSheet('#orderOverlay');
+      openInvoice(null);
+      $('#invClient').value=customer;
+      $('#invClientAddr').value=address;
+      editInvItems=[{desc:pk,qty:1,price:price}];
+      renderInvItems(); showInvTotal();
+      toast('Rechnung aus Auftrag vorbereitet – prüfen & speichern');
+    }
     function notifyCustomer(){
       const c=$('#ordContact').value.trim(); const name=$('#ordCustomer').value.trim(); const biz=getBiz();
       const msgs={ angefragt:'danke für deine Anfrage! Ich melde mich mit einem passenden Angebot.',
@@ -2011,8 +2039,8 @@
 
     // ---------- Studio-Cutter (Timeline-Trimmer + Effekte + Sound-Remix) ----------
     let cutIn=0, cutOut=0, cutDur=0, cutURL=null, cutTimer=null, cutSelMode=false, cutFPS=30, cutExporting=false;
-    let cutFilter='', cutFade=false, cutAspect='orig';
-    let cutMusicArr=null, cutMusicName='', cutMusicVol=0.7, cutOrigVol=1, cutMusicStart=0;
+    let cutFilter='', cutFade=false, cutAspect='orig', cutFlip=false;
+    let cutMusicArr=null, cutMusicName='', cutMusicVol=0.7, cutOrigVol=1, cutMusicStart=0, cutMuteOrig=false;
     const CUT_ASPECTS=[
       {key:'orig', name:'Original', ar:0},
       {key:'9:16', name:'9:16 Hoch', ar:9/16},
@@ -2066,7 +2094,7 @@
     }
     function closeCutter(){ const v=$('#cutVid'); try{v.pause();}catch(e){} clearTimeout(cutTimer); cutStopMusicPreview();
       $('#cutterOverlay').hidden=true; $('#cutPlayFull').innerHTML=icon('play')+' Play'; }
-    function applyCutFilterPreview(){ try{ $('#cutVid').style.filter = cutFilter || 'none'; }catch(e){} }
+    function applyCutFilterPreview(){ try{ const v=$('#cutVid'); v.style.filter = cutFilter || 'none'; v.style.transform = cutFlip?'scaleX(-1)':''; }catch(e){} }
     function cutLoadBlob(blob){ const v=$('#cutVid'); if(cutURL){ try{URL.revokeObjectURL(cutURL);}catch(e){} }
       cutURL=URL.createObjectURL(blob); v.src=cutURL; v.load(); $('#cutHint').style.display='none';
       $('#cutText').value=''; $('#cutTextPrev').textContent=''; applyCutFilterPreview();
@@ -2185,13 +2213,14 @@
         const out=cvs.captureStream(30);
         let vidStream; try{ vidStream=v.captureStream?v.captureStream():v.mozCaptureStream(); }catch(e){}
         // Audio: Original + optional Musik mischen (WebAudio)
-        const needMix = !!cutMusicArr || cutOrigVol!==1;
+        const origV = cutMuteOrig?0:cutOrigVol;
+        const needMix = !!cutMusicArr || origV!==1;
         if(needMix){
           try{
             ac=new (window.AudioContext||window.webkitAudioContext)(); await ac.resume();
             const dest=ac.createMediaStreamDestination();
             const vTracks=vidStream?vidStream.getAudioTracks():[];
-            if(vTracks.length){ const s=ac.createMediaStreamSource(new MediaStream([vTracks[0]])); const g=ac.createGain(); g.gain.value=cutOrigVol; s.connect(g); g.connect(dest); }
+            if(vTracks.length){ const s=ac.createMediaStreamSource(new MediaStream([vTracks[0]])); const g=ac.createGain(); g.gain.value=origV; s.connect(g); g.connect(dest); }
             if(cutMusicArr){ const buf=await ac.decodeAudioData(cutMusicArr.slice(0)); musicNode=ac.createBufferSource(); musicNode.buffer=buf; musicNode.loop=true; const gm=ac.createGain(); gm.gain.value=cutMusicVol; musicNode.connect(gm); gm.connect(dest); }
             dest.stream.getAudioTracks().forEach(t=>{ try{out.addTrack(t);}catch(e){} });
           }catch(e){ if(vidStream){ vidStream.getAudioTracks().forEach(t=>{ try{out.addTrack(t);}catch(_){} }); } }
@@ -2206,7 +2235,7 @@
         rec.start(); if(musicNode){ try{ musicNode.start(0, cutMusicStart||0); }catch(e){} } await v.play();
         await new Promise((resolve)=>{ (function draw(){ try{
             ctx.fillStyle='#000'; ctx.fillRect(0,0,cvs.width,cvs.height);
-            ctx.filter=filt; ctx.drawImage(v,cr.x,cr.y,cr.w,cr.h); ctx.filter='none';
+            ctx.filter=filt; if(cutFlip){ ctx.save(); ctx.translate(cvs.width,0); ctx.scale(-1,1); ctx.drawImage(v,cvs.width-cr.x-cr.w,cr.y,cr.w,cr.h); ctx.restore(); } else { ctx.drawImage(v,cr.x,cr.y,cr.w,cr.h); } ctx.filter='none';
             if(txt){ ctx.textAlign='center'; ctx.font='bold '+Math.round(cvs.width/14)+'px sans-serif'; ctx.lineWidth=Math.max(2,cvs.width/120); ctx.strokeStyle='rgba(0,0,0,.75)'; ctx.fillStyle='#fff'; const y=cvs.height*0.9; ctx.strokeText(txt,cvs.width/2,y); ctx.fillText(txt,cvs.width/2,y); }
             if(fadeD>0){ const ct=v.currentTime; let a=0; if(ct<inT+fadeD) a=1-(ct-inT)/fadeD; else if(ct>outT-fadeD) a=1-(outT-ct)/fadeD; if(a>0){ ctx.fillStyle='rgba(0,0,0,'+Math.max(0,Math.min(1,a))+')'; ctx.fillRect(0,0,cvs.width,cvs.height); } }
           }catch(e){}
@@ -2372,6 +2401,20 @@
     $('#cutTap').onclick=cutTapTempo;
     $('#cutFrame').onclick=cutSaveFrame;
     $('#cutCapcut').onclick=cutCapcutHandoff;
+    $('#cutFlip').onchange=(e)=>{ cutFlip=e.target.checked; applyCutFilterPreview(); };
+    $('#cutMute').onchange=(e)=>{ cutMuteOrig=e.target.checked; };
+    document.addEventListener('keydown',(e)=>{
+      if($('#cutterOverlay').hidden) return;
+      const tag=(e.target&&e.target.tagName||'').toLowerCase();
+      if(tag==='input'||tag==='textarea'||tag==='select') return;
+      const k=e.key;
+      if(k===' '){ e.preventDefault(); cutToggleFull(); }
+      else if(k==='ArrowLeft'){ e.preventDefault(); cutStep(-1); }
+      else if(k==='ArrowRight'){ e.preventDefault(); cutStep(1); }
+      else if(k==='i'||k==='I'){ $('#cutSetIn').click(); }
+      else if(k==='o'||k==='O'){ $('#cutSetOut').click(); }
+      else if(k==='Enter'){ e.preventDefault(); cutPlaySelection(); }
+    });
     wireCutterTimeline();
     $('#mediaRefresh').onclick=()=>renderMyMedia();
     $('#mediaFile').onchange=(e)=>{ const fs=Array.from(e.target.files||[]); e.target.value=''; importMedia(fs); };
@@ -2380,6 +2423,7 @@
     $('#ordSave').onclick=saveOrder;
     $('#ordDelete').onclick=deleteOrder;
     $('#ordNotify').onclick=notifyCustomer;
+    $('#ordToInvoice').onclick=orderToInvoice;
     $('#okPop').onclick=()=>{ $('#okPop').hidden=true; };
     $('#newPackage').onclick=()=>openPackage(null);
     $('#pkgCancel').onclick=()=>closeSheet('#packageOverlay');
@@ -2429,6 +2473,51 @@
     if(localStorage.getItem(LS.auto)==='1' && getToken() && getGistId()){
       setTimeout(()=>syncNow(true),600);
     }
+
+    // ---------- Pull-to-refresh (runterziehen → aktualisieren/synchronisieren) ----------
+    (function(){
+      const el=$('#ptr'); if(!el) return; const spin=el.querySelector('.ptr-spin');
+      let startY=0, pulling=false, dist=0, busy=false; const TH=64;
+      function blocked(){
+        if(busy) return true;
+        if(!$('#teleOverlay').hidden || !$('#cutterOverlay').hidden || !$('#invoiceViewOverlay').hidden) return true;
+        if(document.querySelector('.overlay.open')) return true;
+        return false;
+      }
+      function reset(){ el.style.height='0'; el.style.opacity='0'; if(spin) spin.style.transform='rotate(0deg)'; dist=0; }
+      function refresh(){
+        busy=true; el.classList.add('loading');
+        try{
+          if(view==='ideen') renderIdeen();
+          else if(view==='uebersicht') renderUebersicht();
+          else if(view==='rechnung'){ renderOrders(); renderPackages(); renderInvoices(); }
+          else if(view==='glossar') renderGlossar();
+          else if(view==='lernen') renderGuides();
+          else if(view==='assets'){ renderAssets(); renderMyMedia(); }
+        }catch(e){}
+        const done=()=>{ if(!busy) return; busy=false; el.classList.remove('loading'); reset(); toast('Aktualisiert'); };
+        if(getToken() && getGistId()){ let p; try{ p=syncNow(true); }catch(e){} if(p&&p.then){ p.then(done,done); } setTimeout(done,4000); }
+        else setTimeout(done,600);
+      }
+      window.addEventListener('touchstart',(e)=>{
+        if(blocked() || window.scrollY>0 || e.touches.length!==1){ pulling=false; return; }
+        startY=e.touches[0].clientY; pulling=true; dist=0;
+      },{passive:true});
+      window.addEventListener('touchmove',(e)=>{
+        if(!pulling) return;
+        if(window.scrollY>0){ pulling=false; reset(); return; }
+        const d=e.touches[0].clientY-startY;
+        if(d<=0){ reset(); return; }
+        e.preventDefault();
+        dist=Math.min(d*0.5, 90);
+        el.style.height=dist+'px'; el.style.opacity=String(Math.min(1,dist/TH));
+        if(spin) spin.style.transform='rotate('+(dist*4)+'deg)';
+      },{passive:false});
+      window.addEventListener('touchend',()=>{
+        if(!pulling) return; pulling=false;
+        if(dist>=TH) refresh(); else reset();
+      },{passive:true});
+    })();
 
     if('serviceWorker' in navigator){
       window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));

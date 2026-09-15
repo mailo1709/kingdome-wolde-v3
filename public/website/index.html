@@ -54,7 +54,10 @@
     /* services */
     .grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
     .svc{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px}
-    .svc .ic{font-size:30px}
+    .svc .ic{font-size:30px;color:var(--accent2)}
+    .svc .ic .ico{width:30px;height:30px}
+    .price .tag .ico{width:12px;height:12px;vertical-align:-1px;margin-right:2px}
+    .grid .svc .ic svg{display:inline-block}
     .svc h3{margin:12px 0 8px;font-size:19px}
     .svc p{color:var(--muted);margin:0;font-size:15px}
     /* pricing */
@@ -128,12 +131,34 @@
     .reveal{opacity:0;transform:translateY(18px);transition:opacity .55s ease, transform .55s ease}
     .reveal.in{opacity:1;transform:none}
     @media (prefers-reduced-motion: reduce){ .reveal{opacity:1;transform:none;transition:none} }
+    /* Galerie */
+    .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    @media(max-width:760px){ .gallery{grid-template-columns:repeat(2,1fr)} }
+    @media(max-width:460px){ .gallery{grid-template-columns:1fr} }
+    .gtile{position:relative;aspect-ratio:4/5;border-radius:16px;overflow:hidden;border:1px solid var(--line);
+      background:var(--card);display:block}
+    .gtile img{width:100%;height:100%;object-fit:cover;display:block}
+    .gtile .cap{position:absolute;left:0;right:0;bottom:0;padding:10px 12px;font-size:13px;font-weight:600;
+      background:linear-gradient(180deg,transparent,rgba(0,0,0,.72));color:#fff}
+    .gtile.ph{display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);
+      font-size:13px;padding:14px;background:
+        radial-gradient(120% 80% at 30% 20%, rgba(139,92,246,.28), transparent 60%),
+        radial-gradient(120% 90% at 80% 90%, rgba(99,102,241,.22), transparent 55%), var(--card2, #201b34)}
+    .gtile.ph span{opacity:.85}
+    /* Pull-to-refresh (Website) */
+    .wptr{position:fixed;left:0;right:0;top:0;height:0;overflow:hidden;z-index:60;display:flex;
+      align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;padding-bottom:6px;color:var(--accent2)}
+    .wptr-spin{width:26px;height:26px;border-radius:50%;border:2.5px solid var(--line);border-top-color:var(--accent2)}
+    .wptr.loading{opacity:1!important;height:52px!important}
+    .wptr.loading .wptr-spin{animation:wptrspin .7s linear infinite}
+    @keyframes wptrspin{to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
+  <div id="wptr" class="wptr"><div class="wptr-spin"></div></div>
   <header>
     <div class="wrap nav">
-      <div class="brand"><span class="dot">🎬</span><span id="brandName">Dein Video-Studio</span></div>
+      <div class="brand"><span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><rect x="2.5" y="6" width="13" height="12" rx="2.5"/><path d="m15.5 10 6-3.5v11l-6-3.5Z"/></svg></span><span id="brandName">Dein Video-Studio</span></div>
       <nav class="links">
         <a href="#leistungen">Leistungen</a>
         <a href="#beispiele">Beispiele</a>
@@ -156,8 +181,8 @@
           <a href="#kontakt" class="btn ghost">Kostenlos anfragen</a>
         </div>
         <div class="badges">
-          <span>⚡ Schnelle Lieferung</span><span>💬 Feste Preise</span>
-          <span>📱 Reels · Shorts · TikTok · YouTube</span>
+          <span>Schnelle Lieferung</span><span>Feste Preise</span>
+          <span>Reels · Shorts · TikTok · YouTube</span>
         </div>
       </div>
     </section>
@@ -174,6 +199,14 @@
         <div class="sec-h"><h2>Beispiele &amp; Trends</h2><p>Unser Portfolio wächst – das sind die Styles, die wir umsetzen (mit Trend-Beispielen zum Reinschauen).</p></div>
         <div class="grid" id="examples"></div>
         <p class="note">Eigene Referenzvideos kommen laufend dazu. Du willst ein bestimmtes Format? Sag einfach Bescheid.</p>
+      </div>
+    </section>
+
+    <section id="galerie">
+      <div class="wrap">
+        <div class="sec-h"><h2>Galerie</h2><p>Ein paar Eindrücke aus unserer Arbeit.</p></div>
+        <div class="gallery" id="gallery"></div>
+        <p class="note" id="galleryNote"></p>
       </div>
     </section>
 
@@ -197,15 +230,15 @@
         <div class="sec-h"><h2>Über uns</h2><p>Ehrlich, bodenständig und mit klarem Plan nach vorne.</p></div>
         <div class="equipgrid">
           <div class="equip">
-            <h3>🎥 Womit wir drehen</h3>
+            <h3>Womit wir drehen</h3>
             <ul id="equipRecord"></ul>
           </div>
           <div class="equip">
-            <h3>✂️ Womit wir schneiden</h3>
+            <h3>Womit wir schneiden</h3>
             <ul id="equipEdit"></ul>
           </div>
           <div class="equip">
-            <h3>🎧 Audio (aktuell)</h3>
+            <h3>Audio (aktuell)</h3>
             <ul id="equipAudio"></ul>
           </div>
         </div>
@@ -246,7 +279,7 @@
 
   <div id="afOk" class="afok" hidden>
     <div class="afok-card">
-      <div class="afok-check">✓</div>
+      <div class="afok-check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:34px;height:34px"><path d="M20 6 9 17l-5-5"/></svg></div>
       <div class="afok-h">Danke!</div>
       <div class="afok-p" id="afOkP">Deine Anfrage ist unterwegs – ich melde mich schnell bei dir zurück.</div>
       <button class="btn primary" id="afOkClose" style="margin-top:18px">Alles klar</button>
@@ -292,10 +325,10 @@
       slogan: 'Content, der den Daumen stoppt.',
       about: 'Wir helfen Creators, Selbstständigen und kleinen Marken dabei, mit Videos aufzufallen – von der ersten Idee über den Dreh bis zum fertigen Schnitt. Ob Reels, Shorts, TikTok oder YouTube: schneller, sauberer Schnitt mit Hook, Untertiteln, Musik und dem richtigen Rhythmus, damit die Leute dranbleiben.',
       services: [
-        { icon: '🎬', title: 'Kurzvideos', text: 'Reels, Shorts & TikToks mit starkem Hook, Untertiteln und Beat-Sync-Schnitt.' },
-        { icon: '📺', title: 'YouTube-Schnitt', text: 'Langform-Videos mit sauberem Storytelling, B-Roll, Grafik und Sounddesign.' },
-        { icon: '🎥', title: 'Dreh & Produktion', text: 'Halbe oder ganze Drehtage – Kamera, Licht, Ton. Wir kommen vorbei oder ihr schickt Material.' },
-        { icon: '🖼️', title: 'Extras', text: 'Thumbnails, Farbkorrektur, Untertitel, Express-Lieferung – flexibel dazubuchbar.' },
+        { icon: 'video', title: 'Kurzvideos', text: 'Reels, Shorts & TikToks mit starkem Hook, Untertiteln und Beat-Sync-Schnitt.' },
+        { icon: 'film', title: 'YouTube-Schnitt', text: 'Langform-Videos mit sauberem Storytelling, B-Roll, Grafik und Sounddesign.' },
+        { icon: 'camera', title: 'Dreh & Produktion', text: 'Halbe oder ganze Drehtage – Kamera, Licht, Ton. Wir kommen vorbei oder ihr schickt Material.' },
+        { icon: 'image', title: 'Extras', text: 'Thumbnails, Farbkorrektur, Untertitel, Express-Lieferung – flexibel dazubuchbar.' },
       ],
       steps: [
         ['1 · Anfrage', 'Kurz sagen, was du brauchst – Ziel, Plattform, Stil.'],
@@ -307,7 +340,7 @@
       ],
     },
     PACKAGES: [
-      { group: '🎬 Kurzvideos (Reels · Shorts · TikTok)', items: [
+      { group: 'Kurzvideos (Reels · Shorts · TikTok)', items: [
         { name: 'Starter', price: 89, unit: '3 Videos', popular: false, desc: '3 Kurzvideos, professioneller Schnitt (~30 €/Video)',
           features: ['3 Videos (bis 60 Sek.)', 'Schnitt + passende Musik', 'Untertitel', '1 Korrekturschleife'] },
         { name: 'Creator', price: 179, unit: '7 Videos', popular: true, desc: '7 Kurzvideos – bestes Preis-Leistungs-Verhältnis (~26 €/Video)',
@@ -315,7 +348,7 @@
         { name: 'Pro', price: 290, unit: '/ Monat', popular: false, desc: '12 Kurzvideos im Monat für regelmäßigen Content (~24 €/Video)',
           features: ['12 Videos / Monat', 'Alles aus Creator', 'Thumbnails inklusive', 'Priorität & schnelle Lieferung'] },
       ]},
-      { group: '📺 YouTube (Langform)', items: [
+      { group: 'YouTube (Langform)', items: [
         { name: 'Single', price: 69, unit: '/ Video', popular: false, desc: '1 YouTube-Video, kompletter Schnitt',
           features: ['bis ~10 Min. fertige Länge', 'Schnitt + B-Roll', 'Musik & Sounddesign', '1 Korrekturschleife'] },
         { name: 'Bundle', price: 239, unit: '4 Videos', popular: true, desc: '4 YouTube-Videos im Paket (du sparst ggü. Einzelpreis)',
@@ -323,7 +356,7 @@
         { name: 'Power', price: 399, unit: '7 Videos', popular: false, desc: '7 YouTube-Videos – für aktive Kanäle',
           features: ['7 Videos', 'Thumbnails inklusive', 'Priorität', 'monatliche Abstimmung'] },
       ]},
-      { group: '🎥 Drehtage', items: [
+      { group: 'Drehtage', items: [
         { name: 'Halbtag', price: 99, unit: 'bis 3 Std.', popular: false, desc: 'Kurzer Dreh vor Ort',
           features: ['bis 3 Stunden', 'iPhone / Canon EOS / Action-Cam', 'Material digital übergeben'] },
         { name: 'Drehtag', price: 179, unit: 'bis 6 Std.', popular: true, desc: 'Klassischer Drehtag',
@@ -331,7 +364,7 @@
         { name: 'Full-Day', price: 279, unit: 'bis 10 Std.', popular: false, desc: 'Ganzer Produktionstag',
           features: ['bis 10 Stunden', 'komplettes Equipment', 'mehrere Setups/Locations', 'Vorsortierung des Materials'] },
       ]},
-      { group: '➕ Zusatzleistungen', items: [
+      { group: 'Zusatzleistungen', items: [
         { name: 'Thumbnail-Design', price: 15, unit: '/ Stück', popular: false, desc: 'Klickstarkes Vorschaubild', features: [] },
         { name: 'Untertitel', price: 9, unit: '/ Video', popular: false, desc: 'Saubere, animierte Untertitel', features: [] },
         { name: 'Farbkorrektur / Grading', price: 19, unit: '/ Video', popular: false, desc: 'Filmischer, einheitlicher Look', features: [] },
@@ -359,10 +392,10 @@
 
     // Unsere Ziele / Roadmap
     GOALS: [
-      ['🎙️ Neues Audio-Setup', 'Profi-Mikrofon & Studio-Kopfhörer statt der aktuellen kabelgebundenen Apple-Kopfhörer.'],
-      ['🖱️ Zubehör', 'Schnitt-Maus, Adapter & Kabel für schnelleres, saubereres Arbeiten.'],
-      ['🎥 Neue Kamera', 'Sony FX30 (Cinema-Look, 4K) für noch hochwertigere Aufnahmen.'],
-      ['📈 Mehr Reichweite', 'Regelmäßiger Content & wachsende Community auf Instagram und TikTok.'],
+      ['Neues Audio-Setup', 'Profi-Mikrofon & Studio-Kopfhörer statt der aktuellen kabelgebundenen Apple-Kopfhörer.'],
+      ['Zubehör', 'Schnitt-Maus, Adapter & Kabel für schnelleres, saubereres Arbeiten.'],
+      ['Neue Kamera', 'Sony FX30 (Cinema-Look, 4K) für noch hochwertigere Aufnahmen.'],
+      ['Mehr Reichweite', 'Regelmäßiger Content & wachsende Community auf Instagram und TikTok.'],
     ],
   };
   </script>
@@ -382,6 +415,15 @@
     if('tiktok' in CFG) C.CONTACT.tiktok = CFG.tiktok;
     var esc = function(s){return (s==null?'':String(s)).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);});};
     var eur = function(n){return (Number(n)||0).toLocaleString('de-DE',{style:'currency',currency:'EUR',minimumFractionDigits:0});};
+    var ICONS = {
+      video:'<rect x="2.5" y="6" width="13" height="12" rx="2.5"/><path d="m15.5 10 6-3.5v11l-6-3.5Z"/>',
+      film:'<rect x="2.5" y="3.5" width="19" height="17" rx="2.5"/><path d="M7 3.5v17M17 3.5v17M2.5 12h19M2.5 8h4.5M17 8h4.5M2.5 16h4.5M17 16h4.5"/>',
+      camera:'<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/>',
+      image:'<rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/>',
+      play:'<path d="M6 4.5v15l13-7.5-13-7.5Z"/>',
+      star:'<path d="M12 2.5 15 9l7 .8-5.2 4.7 1.5 6.9L12 18l-6.3 3.4 1.5-6.9L2 9.8 9 9l3-6.5Z"/>'
+    };
+    var icon = function(name){ return '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICONS[name]||'')+'</svg>'; };
 
     document.getElementById('brandName').textContent = S.name;
     document.getElementById('footName').textContent = S.name;
@@ -423,7 +465,7 @@
     setTxt('impTax', CFG.impressumTaxId ? ('USt-IdNr./Steuernr.: ' + CFG.impressumTaxId + '. ') : '');
 
     document.getElementById('services').innerHTML = (S.services||[]).map(function(s){
-      return '<div class="svc"><div class="ic">'+esc(s.icon)+'</div><h3>'+esc(s.title)+'</h3><p>'+esc(s.text)+'</p></div>';
+      return '<div class="svc"><div class="ic">'+icon(s.icon)+'</div><h3>'+esc(s.title)+'</h3><p>'+esc(s.text)+'</p></div>';
     }).join('');
 
     document.getElementById('steps').innerHTML = (S.steps||[]).map(function(st){
@@ -441,7 +483,7 @@
       }
       return '<div class="pgroup"><h3>'+esc(g.group)+'</h3><div class="cards">'+
         g.items.map(function(it){
-          return '<div class="price'+(it.popular?' pop':'')+'">'+(it.popular?'<div class="tag">★ Beliebt</div>':'')+
+          return '<div class="price'+(it.popular?' pop':'')+'">'+(it.popular?'<div class="tag">'+icon('star')+' Beliebt</div>':'')+
             '<div class="nm">'+esc(it.name)+'</div>'+
             '<div class="amt">'+eur(it.price)+' <small>'+esc(it.unit)+'</small></div>'+
             '<div class="ds">'+esc(it.desc)+'</div>'+
@@ -454,8 +496,32 @@
     var EX = C.EXAMPLES || [];
     document.getElementById('examples').innerHTML = EX.map(function(e){
       return '<a class="svc" href="'+esc(e.url)+'" target="_blank" rel="noopener" style="text-decoration:none;display:block">'+
-        '<div class="ic">▶️</div><h3>'+esc(e.title)+' ↗</h3><p>'+esc(e.desc)+'</p></a>';
+        '<div class="ic">'+icon('play')+'</div><h3>'+esc(e.title)+' ↗</h3><p>'+esc(e.desc)+'</p></a>';
     }).join('');
+
+    // Galerie (echte Bilder über config.js: gallery: [{src, caption}] oder ["url1","url2"])
+    (function(){
+      var g = (CFG.gallery && CFG.gallery.length) ? CFG.gallery : [];
+      var el = document.getElementById('gallery');
+      var note = document.getElementById('galleryNote');
+      if(g.length){
+        el.innerHTML = g.map(function(it){
+          var src = typeof it==='string' ? it : (it && it.src);
+          var cap = (it && it.caption) ? it.caption : '';
+          if(!src) return '';
+          return '<div class="gtile"><img loading="lazy" src="'+esc(src)+'" alt="'+esc(cap||'Veox Edits')+'">'+
+            (cap?'<div class="cap">'+esc(cap)+'</div>':'')+'</div>';
+        }).join('');
+        if(note) note.textContent = '';
+      } else {
+        // Platzhalter, bis eigene Bilder in config.js hinterlegt sind
+        var phs = ['Reel / Short','YouTube-Cut','Vorher / Nachher','Drehtag','Farbkorrektur','Thumbnail'];
+        el.innerHTML = phs.map(function(t){
+          return '<div class="gtile ph"><span>'+esc(t)+'</span></div>';
+        }).join('');
+        if(note) note.textContent = 'Bald mit echten Bildern gefüllt.';
+      }
+    })();
 
     // Equipment
     var EQ = C.EQUIPMENT || {};
@@ -507,6 +573,32 @@
         if(en.isIntersecting){ en.target.classList.add('in'); obs.unobserve(en.target); } }); },{threshold:0.1});
       document.querySelectorAll('main section').forEach(function(s){ s.classList.add('reveal'); obs.observe(s); });
     }catch(e){ document.querySelectorAll('main section').forEach(function(s){ s.classList.add('in'); }); }
+
+    // Pull-to-refresh (runterziehen → Seite neu laden)
+    (function(){
+      var el=document.getElementById('wptr'); if(!el) return; var spin=el.querySelector('.wptr-spin');
+      var startY=0, pulling=false, dist=0, busy=false; var TH=64;
+      function reset(){ el.style.height='0'; el.style.opacity='0'; if(spin) spin.style.transform='rotate(0deg)'; dist=0; }
+      window.addEventListener('touchstart',function(e){
+        if(busy || window.scrollY>0 || e.touches.length!==1){ pulling=false; return; }
+        startY=e.touches[0].clientY; pulling=true; dist=0;
+      },{passive:true});
+      window.addEventListener('touchmove',function(e){
+        if(!pulling) return;
+        if(window.scrollY>0){ pulling=false; reset(); return; }
+        var d=e.touches[0].clientY-startY;
+        if(d<=0){ reset(); return; }
+        e.preventDefault();
+        dist=Math.min(d*0.5, 90);
+        el.style.height=dist+'px'; el.style.opacity=String(Math.min(1,dist/TH));
+        if(spin) spin.style.transform='rotate('+(dist*4)+'deg)';
+      },{passive:false});
+      window.addEventListener('touchend',function(){
+        if(!pulling) return; pulling=false;
+        if(dist>=TH){ busy=true; el.classList.add('loading'); setTimeout(function(){ location.reload(); }, 350); }
+        else reset();
+      },{passive:true});
+    })();
   })();
   </script>
 </body>
