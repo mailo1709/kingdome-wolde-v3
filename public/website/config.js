@@ -24,4 +24,15 @@ window.VEOX_CONFIG = {
   impressumStreet: 'Lohgerberstraße 8',
   impressumCity: '',           // z.B. "12345 Musterstadt"  <-- bitte noch ergänzen
   impressumTaxId: '',          // Steuernr./USt-IdNr. (falls vorhanden)
+
+  // --- Galerie: eigene, ECHTE Bilder ---
+  // So fügst du Bilder ein:
+  //  1. Bild in den Ordner public/website/bilder/ hochladen (z.B. reel1.jpg)
+  //  2. Hier eintragen: { src: 'bilder/reel1.jpg', caption: 'Reel für XY' }
+  //  Oder eine Bild-Adresse aus dem Netz: { src: 'https://…/foto.jpg', caption: '…' }
+  //  Leer lassen ([]) = es werden Platzhalter angezeigt.
+  gallery: [
+    // { src: 'bilder/beispiel1.jpg', caption: 'Reel · Sport' },
+    // { src: 'bilder/beispiel2.jpg', caption: 'YouTube-Cut' },
+  ],
 };
