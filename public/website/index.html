@@ -5,6 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Veox Edits – Content, der den Daumen stoppt</title>
   <meta name="description" content="Videoschnitt & Content-Produktion für Reels, Shorts, TikTok und YouTube. Feste Pakete, klare Preise." />
+  <meta name="theme-color" content="#0f0d17" />
+  <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iOCIgZmlsbD0iIzdjM2FlZCIvPjxnIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyLjEiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iNiIgeT0iMTAiIHdpZHRoPSIxMy41IiBoZWlnaHQ9IjEyIiByeD0iMi41Ii8+PHBhdGggZD0iTTE5LjUgMTRsNi41LTMuNnYxMS4yTDE5LjUgMTh6Ii8+PC9nPjwvc3ZnPg==" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iOCIgZmlsbD0iIzdjM2FlZCIvPjxnIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyLjEiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHJlY3QgeD0iNiIgeT0iMTAiIHdpZHRoPSIxMy41IiBoZWlnaHQ9IjEyIiByeD0iMi41Ii8+PHBhdGggZD0iTTE5LjUgMTRsNi41LTMuNnYxMS4yTDE5LjUgMTh6Ii8+PC9nPjwvc3ZnPg==" />
+  <meta name="apple-mobile-web-app-title" content="Veox Edits" />
+  <link rel="canonical" href="https://mailo1709.github.io/kingdome-wolde-v3/website/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Veox Edits" />
+  <meta property="og:title" content="Veox Edits – Content, der den Daumen stoppt" />
+  <meta property="og:description" content="Videoschnitt & Content-Produktion für Reels, Shorts, TikTok und YouTube. Feste Pakete, klare Preise." />
+  <meta property="og:url" content="https://mailo1709.github.io/kingdome-wolde-v3/website/" />
+  <meta property="og:image" content="https://mailo1709.github.io/kingdome-wolde-v3/website/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Veox Edits – Content, der den Daumen stoppt" />
+  <meta name="twitter:description" content="Videoschnitt & Content-Produktion für Reels, Shorts, TikTok und YouTube." />
+  <meta name="twitter:image" content="https://mailo1709.github.io/kingdome-wolde-v3/website/og.png" />
   <style>
     :root{
       --bg:#0f0d17; --bg2:#171426; --card:#1d1930; --line:#2e2848;
@@ -152,10 +169,21 @@
     .wptr.loading{opacity:1!important;height:52px!important}
     .wptr.loading .wptr-spin{animation:wptrspin .7s linear infinite}
     @keyframes wptrspin{to{transform:rotate(360deg)}}
+    /* Mobiler Sticky-CTA */
+    .mcta{display:none}
+    @media(max-width:720px){
+      .mcta{display:flex;align-items:center;justify-content:center;gap:8px;position:fixed;
+        left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:55;
+        padding:15px 20px;border-radius:14px;font-weight:800;text-decoration:none;color:#fff;
+        background:linear-gradient(135deg,#8b5cf6,#6d28d9);box-shadow:0 12px 30px rgba(139,92,246,.5);
+        transition:opacity .25s ease, transform .25s ease}
+      .mcta.hide{opacity:0;transform:translateY(24px);pointer-events:none}
+    }
   </style>
 </head>
 <body>
   <div id="wptr" class="wptr"><div class="wptr-spin"></div></div>
+  <a href="#kontakt" class="mcta" id="mcta">Jetzt kostenlos anfragen</a>
   <header>
     <div class="wrap nav">
       <div class="brand"><span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><rect x="2.5" y="6" width="13" height="12" rx="2.5"/><path d="m15.5 10 6-3.5v11l-6-3.5Z"/></svg></span><span id="brandName">Dein Video-Studio</span></div>
@@ -598,6 +626,16 @@
         if(dist>=TH){ busy=true; el.classList.add('loading'); setTimeout(function(){ location.reload(); }, 350); }
         else reset();
       },{passive:true});
+    })();
+
+    // Sticky-CTA ausblenden, wenn der Kontakt-Bereich sichtbar ist
+    (function(){
+      var cta=document.getElementById('mcta'), kontakt=document.getElementById('kontakt');
+      if(!cta||!kontakt||!('IntersectionObserver' in window)) return;
+      var io=new IntersectionObserver(function(es){ es.forEach(function(en){
+        cta.classList.toggle('hide', en.isIntersecting);
+      }); },{threshold:0.15});
+      io.observe(kontakt);
     })();
   })();
   </script>
