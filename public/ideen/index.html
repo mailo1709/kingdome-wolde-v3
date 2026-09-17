@@ -488,7 +488,10 @@
 
     <!-- RECHNUNG / BUSINESS -->
     <section id="viewRechnung" hidden>
-      <div class="sectionhead" style="margin-top:16px"><span data-ico="clock"></span>Aufträge</div>
+      <div class="sectionhead" style="margin-top:16px"><span data-ico="chart"></span>Geschäft</div>
+      <div class="kpis" id="bizSummary"></div>
+
+      <div class="sectionhead" style="margin-top:24px"><span data-ico="clock"></span>Aufträge</div>
       <p class="catnote">Kunden-Aufträge verfolgen: Angefragt → Bestätigt → Drehtermin → Schnitt → Fertig → Geliefert (oder Abgesagt). Alles jederzeit editierbar. <b>Anfragen von der Website</b> landen automatisch hier, sobald du den Auftrags-Link aus der E-Mail auf deinem Gerät antippst.</p>
       <button class="btn primary" id="newOrder" style="margin-bottom:10px"><span data-ico="plus"></span> Neuer Auftrag</button>
       <div class="list" id="orderList"></div>
@@ -1046,7 +1049,7 @@
       document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
       try{ if(('#'+v)!==location.hash) history.replaceState(null,'','#'+v); }catch(e){}
       if(v==='uebersicht') renderUebersicht();
-      if(v==='rechnung'){ renderOrders(); renderPackages(); renderInvoices(); }
+      if(v==='rechnung'){ renderBizSummary(); renderOrders(); renderPackages(); renderInvoices(); }
       if(v==='lernen') renderGuides();
       if(v==='glossar') renderGlossar();
       if(v==='assets'){ renderAssets(); renderMyMedia(); }
@@ -1616,7 +1619,31 @@
       const cnt=activeInv().filter(i=>(i.number||'').indexOf(y+'-')===0).length;
       return y+'-'+String(cnt+1).padStart(3,'0');
     }
+    function renderBizSummary(){
+      const el=$('#bizSummary'); if(!el) return;
+      const now=new Date(), ym=now.getFullYear()+'-'+now.getMonth();
+      const invs=activeInv();
+      const grossOf=(i)=>calcInv(i.items,i.vat,i.klein).gross;
+      let umsatzGesamt=0, umsatzMonat=0, offen=0;
+      invs.forEach(i=>{ const g=grossOf(i);
+        if(i.status==='bezahlt'){ umsatzGesamt+=g;
+          const d=i.date?new Date(i.date+'T00:00:00'):new Date(i.createdAt);
+          if((d.getFullYear()+'-'+d.getMonth())===ym) umsatzMonat+=g;
+        } else { offen+=g; }
+      });
+      const aktiveAuftraege=(typeof activeOrders==='function')?activeOrders().filter(o=>!isDone(o)).length:0;
+      const kpis=[
+        {num:money(umsatzMonat),lbl:'Umsatz diesen Monat',ic:'chart',cls:'good'},
+        {num:money(umsatzGesamt),lbl:'Umsatz gesamt (bezahlt)',ic:'receipt'},
+        {num:money(offen),lbl:'Offene Rechnungen',ic:'clock',cls:offen>0?'warn':''},
+        {num:aktiveAuftraege,lbl:'Aktive Aufträge',ic:'box',cls:'accent'},
+      ];
+      el.innerHTML=kpis.map(k=>`<div class="kpi"><div class="kic">${icon(k.ic)}</div>
+        <div class="num ${k.cls||''}" style="font-size:22px">${esc(String(k.num))}</div>
+        <div class="lbl">${esc(k.lbl)}</div></div>`).join('');
+    }
     function renderInvoices(){
+      renderBizSummary();
       const b=getBiz();
       $('#bizWarn').textContent = b.name ? '' : 'Trage zuerst deine Firmendaten ein (Button oben).';
       const items=activeInv().sort((a,b2)=>(b2.date||'').localeCompare(a.date||'')|| (b2.createdAt-a.createdAt));
@@ -1840,6 +1867,7 @@
       clearTimeout(okT); okT=setTimeout(()=>{ $('#okPop').hidden=true; },1300); }
     function isDone(o){ return o.status==='geliefert'||o.status==='abgesagt'; }
     function renderOrders(){
+      renderBizSummary();
       const el=$('#orderList');
       const list=activeOrders().sort((a,b)=> (isDone(a)?1:0)-(isDone(b)?1:0) || (b.updatedAt-a.updatedAt));
       if(!list.length){ el.innerHTML='<p class="hint" style="margin:0 0 6px">Noch keine Aufträge. Tippe „＋ Neuer Auftrag".</p>'; return; }
@@ -2490,7 +2518,7 @@
         try{
           if(view==='ideen') renderIdeen();
           else if(view==='uebersicht') renderUebersicht();
-          else if(view==='rechnung'){ renderOrders(); renderPackages(); renderInvoices(); }
+          else if(view==='rechnung'){ renderBizSummary(); renderOrders(); renderPackages(); renderInvoices(); }
           else if(view==='glossar') renderGlossar();
           else if(view==='lernen') renderGuides();
           else if(view==='assets'){ renderAssets(); renderMyMedia(); }
